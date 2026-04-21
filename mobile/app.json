@@ -16,6 +16,11 @@
     },
     "ios": {
       "bundleIdentifier": "com.cofound.app"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "797beaa9-49fc-4b0b-895b-eadfbe838ed6"
+      }
     }
   }
 }
