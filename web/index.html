@@ -1,0 +1,1258 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CoFound — Encuentra al co-founder que te falta</title>
+<link rel="icon" type="image/png" href="assets/logo-mark.png" />
+
+<!-- SEO -->
+<meta name="description" content="CoFound: swipe, match y chat con emprendedores cuyas skills complementan las tuyas. Encuentra al co-founder perfecto para tu startup. Descarga el APK gratis." />
+<meta name="keywords" content="cofounder, co-founder, emprendedores, startup, networking, matching, equipo, fundador, socio, España, LATAM" />
+<meta name="author" content="CoFound" />
+<meta name="theme-color" content="#0A0A0A" />
+<meta name="robots" content="index, follow" />
+<link rel="canonical" href="https://cofound.app/" />
+
+<!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
+<meta property="og:type" content="website" />
+<meta property="og:locale" content="es_ES" />
+<meta property="og:title" content="CoFound — Encuentra al co-founder que te falta" />
+<meta property="og:description" content="Swipe, match y chat con emprendedores cuyas skills complementan las tuyas. Sin ruido de LinkedIn, sin eventos caros. Solo personas con las que construir." />
+<meta property="og:image" content="assets/logocofound.png" />
+<meta property="og:url" content="https://cofound.app/" />
+<meta property="og:site_name" content="CoFound" />
+
+<!-- Twitter / X -->
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="CoFound — Encuentra al co-founder que te falta" />
+<meta name="twitter:description" content="Swipe, match y chat con emprendedores cuyas skills complementan las tuyas. Descarga gratis." />
+<meta name="twitter:image" content="assets/logocofound.png" />
+
+<template id="__bundler_thumbnail">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+    <rect width="400" height="400" fill="#0a0a0a"/>
+    <circle cx="140" cy="200" r="60" fill="none" stroke="#C0C0C0" stroke-width="6"/>
+    <circle cx="260" cy="200" r="60" fill="none" stroke="#E91E63" stroke-width="6"/>
+    <text x="200" y="320" text-anchor="middle" font-family="Inter, sans-serif" font-weight="800" font-size="42" fill="#fff">CoFound</text>
+  </svg>
+</template>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+<script>
+  const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+    "primary": "#C0C0C0",
+    "accent": "#E91E63",
+    "premium": "#C9A84C",
+    "heroHeadline": "Encuentra al co-founder que te falta",
+    "density": "comfortable"
+  }/*EDITMODE-END*/;
+
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+          mono: ['JetBrains Mono', 'ui-monospace', 'monospace']
+        },
+        colors: {
+          bg:      '#0A0A0A',
+          surface: '#141414',
+          elev:    '#1A1A1A',
+          line:    '#2A2A2A',
+          line2:   '#333333',
+          silver:  { 100:'#F5F5F5', 300:'#D4D4D4', 400:'#C0C0C0', 500:'#A0A0A0', 600:'#808080', 700:'#666666' },
+          pink:    { 500:'#E91E63', 600:'#C2185B', 900:'#2D1219' },
+          gold:    { 400:'#C9A84C', 600:'#A67C2E' },
+          ok:      '#4ADE80',
+          info:    '#60A5FA',
+        }
+      }
+    }
+  }
+</script>
+
+<style>
+  :root{
+    --bg:#0A0A0A; --surface:#141414; --elev:#1A1A1A; --line:#2A2A2A; --line2:#333;
+    --silver:#C0C0C0; --silver-dim:#A0A0A0; --silver-bright:#D4D4D4; --muted:#808080;
+    --pink:#E91E63; --pink-dark:#C2185B; --pink-tint:#2D1219;
+    --gold-a:#C9A84C; --gold-b:#A67C2E;
+    --text:#F5F5F5; --text-2:#A0A0A0; --text-3:#666666;
+  }
+  html,body { background: var(--bg); color: var(--text); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .font-display { font-family: 'Inter', sans-serif; letter-spacing: -0.035em; font-feature-settings: "ss01","cv11"; }
+
+  /* Metallic silver gradient text */
+  .silver-text {
+    background: linear-gradient(180deg, #FFFFFF 0%, #D4D4D4 35%, #A0A0A0 70%, #808080 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .silver-bg { background: linear-gradient(180deg, #E8E8E8 0%, #C0C0C0 50%, #808080 100%); }
+  .gold-text {
+    background: linear-gradient(180deg, #E6CD85 0%, #C9A84C 50%, #A67C2E 100%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .gold-bg { background: linear-gradient(135deg, #C9A84C 0%, #A67C2E 100%); }
+  .pink-bg { background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%); }
+
+  /* Subtle metallic sheen on hero */
+  .sheen {
+    background: radial-gradient(ellipse 900px 400px at 50% 0%, rgba(255,255,255,0.06), transparent 60%),
+                radial-gradient(ellipse 600px 300px at 50% 100%, rgba(233,30,99,0.08), transparent 60%);
+  }
+
+  /* Grid background */
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.035) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 40%, black 40%, transparent 100%);
+  }
+  .dot-bg {
+    background-image: radial-gradient(circle at 1px 1px, rgba(255,255,255,.06) 1px, transparent 0);
+    background-size: 22px 22px;
+  }
+
+  /* Glass card */
+  .glass {
+    background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: border-color .3s ease, transform .3s ease, background .3s ease;
+  }
+  .glass:hover {
+    border-color: var(--line2);
+    transform: translateY(-3px);
+    background: linear-gradient(180deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  }
+
+  /* Buttons */
+  .btn-primary {
+    color:#0A0A0A;
+    background: linear-gradient(180deg, #F5F5F5 0%, #C0C0C0 100%);
+    border: 1px solid rgba(255,255,255,0.25);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 8px 24px -10px rgba(255,255,255,.2);
+    transition: transform .2s, box-shadow .2s, filter .2s;
+  }
+  .btn-primary:hover { transform: translateY(-1px); filter: brightness(1.05); box-shadow: inset 0 1px 0 rgba(255,255,255,.6), 0 12px 30px -8px rgba(255,255,255,.25); }
+
+  .btn-pink {
+    color:#fff; background: linear-gradient(135deg, #E91E63, #C2185B);
+    border: 1px solid rgba(255,255,255,.1);
+    box-shadow: 0 10px 30px -10px rgba(233,30,99,.55);
+    transition: transform .2s, box-shadow .2s, filter .2s;
+  }
+  .btn-pink:hover { transform: translateY(-1px); box-shadow: 0 16px 40px -10px rgba(233,30,99,.7); }
+
+  .btn-ghost {
+    color:#F5F5F5; background:rgba(255,255,255,.02); border:1px solid var(--line2);
+    transition: all .2s;
+  }
+  .btn-ghost:hover { border-color:#5a5a5a; background:rgba(255,255,255,.04); }
+
+  /* Store badges */
+  .store-badge { display:inline-flex; align-items:center; gap:12px; padding:12px 18px; border-radius:14px;
+    background:#141414; border:1px solid #333; color:#F5F5F5; transition: all .2s ease; }
+  .store-badge:hover { border-color:#5a5a5a; transform: translateY(-2px); background:#1A1A1A; }
+  .store-badge .sm { font-size:11px; color:#A0A0A0; line-height:1; }
+  .store-badge .lg { font-size:16px; font-weight:600; line-height:1.1; color:#F5F5F5; }
+
+  /* Phone — dark bezel */
+  .phone {
+    width: 252px; border-radius: 40px;
+    background: linear-gradient(180deg, #1A1A1A 0%, #0A0A0A 100%);
+    padding: 10px; position: relative;
+    box-shadow:
+      inset 0 0 0 1px #2A2A2A,
+      0 40px 80px -24px rgba(0,0,0,.9),
+      0 18px 36px -14px rgba(0,0,0,.7),
+      0 0 0 2px rgba(255,255,255,.02);
+  }
+  .phone .screen {
+    position: relative; width:100%; aspect-ratio: 9/19.5; border-radius: 32px; overflow:hidden; background:#0A0A0A;
+  }
+  .phone .notch {
+    position:absolute; top:14px; left:50%; transform:translateX(-50%);
+    width:100px; height:28px; border-radius:999px; background:#000; z-index:10;
+  }
+  .phone-sm { width:190px; border-radius:30px; padding:8px; }
+  .phone-sm .screen { border-radius:24px; }
+  .phone-sm .notch { width:72px; height:20px; top:10px; }
+
+  /* Accordion */
+  .faq-item { border-bottom:1px solid var(--line); }
+  .faq-q { cursor:pointer; padding:22px 8px; display:flex; justify-content:space-between; align-items:center; gap:20px; }
+  .faq-a { max-height:0; overflow:hidden; transition: max-height .35s ease, padding .35s ease; color:var(--text-2); }
+  .faq-item.open .faq-a { padding: 0 8px 22px; }
+  .faq-item .chev { transition: transform .3s ease; color:#808080; }
+  .faq-item.open .chev { transform: rotate(45deg); color:var(--silver); }
+
+  /* Marquee */
+  .marquee { overflow:hidden; mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent); }
+  .marquee-track { display:flex; gap:72px; animation: marquee 38s linear infinite; width: max-content; }
+  @keyframes marquee { from{ transform: translateX(0);} to { transform: translateX(-50%);} }
+
+  /* Testimonial scroll */
+  .tscroll { scroll-snap-type: x mandatory; scroll-behavior:smooth; }
+  .tscroll > * { scroll-snap-align: start; }
+  .tscroll::-webkit-scrollbar { display:none; }
+
+  /* Bento */
+  .bento { display:grid; gap:20px; grid-template-columns: repeat(6, 1fr); grid-auto-rows: 200px; }
+  .tile { position:relative; overflow:hidden; }
+
+  /* Scroll reveal */
+  .reveal { opacity:0; transform: translateY(18px); transition: opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1); }
+  .reveal.visible { opacity:1; transform: none; }
+
+  /* Floats */
+  @keyframes floaty { 0%{transform: translateY(0) rotate(var(--r,0));} 50%{transform: translateY(-10px) rotate(var(--r,0));} 100%{transform: translateY(0) rotate(var(--r,0));} }
+  .floaty-slow { animation: floaty 7s ease-in-out infinite; }
+  .floaty-med  { animation: floaty 5.5s ease-in-out infinite; }
+
+  /* Density */
+  [data-density="compact"] .py-section { padding-top: 80px; padding-bottom: 80px; }
+  [data-density="comfortable"] .py-section { padding-top: 128px; padding-bottom: 128px; }
+  [data-density="spacious"]    .py-section { padding-top: 168px; padding-bottom: 168px; }
+
+  /* Tile body */
+  .tile-body { padding:28px; height:100%; display:flex; flex-direction:column; }
+  .no-scrollbar::-webkit-scrollbar { display:none; }
+
+  /* Hero logo glow */
+  .logo-glow { filter: drop-shadow(0 0 24px rgba(255,255,255,.25)) drop-shadow(0 8px 24px rgba(0,0,0,.6)); }
+
+  /* Silver ring border for pro premium tiles */
+  .ring-silver { border: 1px solid; border-image: linear-gradient(180deg, rgba(255,255,255,.25), rgba(255,255,255,.05)) 1; }
+
+  /* Tweaks */
+  #tweaks { display:none; position:fixed; right:20px; bottom:20px; z-index:100; width:310px; background:#141414; border:1px solid #2A2A2A; border-radius:16px; padding:16px; box-shadow: 0 20px 60px -20px rgba(0,0,0,.9); color:#F5F5F5; }
+  #tweaks.open { display:block; }
+  #tweaks h4 { font-weight:600; margin-bottom:8px; font-size:13px; letter-spacing:.02em; }
+  #tweaks label { display:block; font-size:11px; color:#808080; margin-top:10px; letter-spacing:.05em; text-transform:uppercase; }
+  #tweaks .row { display:flex; gap:8px; align-items:center; margin-top:6px; }
+  #tweaks input[type=color] { width:38px; height:32px; border-radius:8px; border:1px solid #2A2A2A; background:none; padding:2px; }
+  #tweaks input[type=text], #tweaks textarea, #tweaks select { flex:1; border:1px solid #2A2A2A; border-radius:10px; padding:8px 10px; font-size:12px; background:#0A0A0A; color:#F5F5F5; }
+</style>
+</head>
+<body data-density="comfortable" class="bg-bg text-silver-100">
+
+<!-- ============== NAVBAR ============== -->
+<header id="nav" class="fixed top-0 left-0 right-0 z-50 transition-all duration-300">
+  <div class="max-w-[1320px] mx-auto px-6 lg:px-10">
+    <div id="navInner" class="flex items-center justify-between h-[68px] rounded-2xl px-4 mt-4 transition-all duration-300 border border-transparent">
+      <a href="#" class="flex items-center gap-2.5 group" data-screen-label="Logo">
+        <img src="assets/logo-mark.png" alt="CoFound" class="w-9 h-9 object-contain logo-glow" />
+        <span class="font-display font-semibold text-[19px] tracking-tight silver-text">CoFound</span>
+      </a>
+
+      <nav class="hidden lg:flex items-center gap-1 text-[14px] text-silver-500">
+        <a href="#features" class="px-4 py-2 rounded-lg hover:bg-white/5 hover:text-silver-100 transition">Features</a>
+        <a href="#how" class="px-4 py-2 rounded-lg hover:bg-white/5 hover:text-silver-100 transition">Cómo funciona</a>
+        <a href="#premium" class="px-4 py-2 rounded-lg hover:bg-white/5 hover:text-silver-100 transition">Premium</a>
+        <a href="#faq" class="px-4 py-2 rounded-lg hover:bg-white/5 hover:text-silver-100 transition">FAQ</a>
+      </nav>
+
+      <div class="flex items-center gap-2">
+        <a href="https://github.com/paablooguillenn/CoFound/releases/latest/download/cofound.apk" download="cofound.apk" class="hidden sm:inline-flex btn-primary items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer">
+          Descargar APK
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============== HERO ============== -->
+<section class="relative pt-[120px] pb-24 overflow-hidden sheen" data-screen-label="01 Hero">
+  <div class="absolute inset-0 grid-bg opacity-80"></div>
+
+  <div class="relative max-w-[1320px] mx-auto px-6 lg:px-10 grid lg:grid-cols-12 gap-10 items-center min-h-[78vh]">
+    <!-- LEFT 60% -->
+    <div class="lg:col-span-7 reveal">
+      <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface border border-line text-xs text-silver-500 mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-ok"></span>
+        <span class="mono">Beta abierta · v2.4</span>
+      </div>
+
+      <h1 id="heroHeadline" class="font-display font-semibold text-[64px] leading-[1.02] lg:text-[84px] lg:leading-[.98] tracking-tighter">
+        Encuentra al
+        <span class="silver-text">co-founder</span>
+        que te falta.
+      </h1>
+
+      <p class="mt-6 text-[18px] lg:text-[20px] text-silver-500 max-w-[560px] leading-relaxed">
+        Swipe, match y chat con emprendedores cuyas skills complementan las tuyas. Sin ruido de LinkedIn, sin eventos caros. Solo personas con las que construir.
+      </p>
+
+      <div class="mt-9 flex flex-wrap items-center gap-3">
+        <a href="javascript:void(0)" onclick="alert('Próximamente disponible en iOS. Por ahora descarga el APK para Android.');" class="store-badge">
+          <svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+          <div class="text-left"><div class="sm">Próximamente</div><div class="lg">App Store</div></div>
+        </a>
+        <a href="https://github.com/paablooguillenn/CoFound/releases/latest/download/cofound.apk" download="cofound.apk" class="store-badge">
+          <svg viewBox="0 0 24 24" class="w-6 h-6" fill="currentColor"><path d="M3.6 2.7c-.37.39-.6.99-.6 1.78v15.04c0 .79.23 1.39.6 1.78l.07.07L13 12.1v-.2L3.67 2.63l-.07.07zM17.5 15.6l-3.06-1.77-2.94 2.94 3.05 3.05c.9.51 1.57.04 1.95-.31l.99-.57c1.31-.75 1.31-1.97 0-2.72l-.99-.62zM13.5 11.9L4.3 2.7 14.44 8.63l2.94 1.7-3.88 1.57zM4.3 21.3l9.2-9.2-3.06 1.77L4.3 21.3z"/></svg>
+          <div class="text-left"><div class="sm">Descargar APK</div><div class="lg">Android</div></div>
+        </a>
+      </div>
+
+      <div class="mt-10 flex items-center gap-4">
+        <div class="flex -space-x-2">
+          <div class="w-9 h-9 rounded-full ring-2 ring-bg bg-gradient-to-br from-silver-300 to-silver-600"></div>
+          <div class="w-9 h-9 rounded-full ring-2 ring-bg bg-gradient-to-br from-pink-500 to-pink-600"></div>
+          <div class="w-9 h-9 rounded-full ring-2 ring-bg bg-gradient-to-br from-silver-100 to-silver-500"></div>
+          <div class="w-9 h-9 rounded-full ring-2 ring-bg bg-gradient-to-br from-silver-400 to-silver-700"></div>
+          <div class="w-9 h-9 rounded-full ring-2 ring-bg bg-elev text-silver-100 text-[10px] font-semibold flex items-center justify-center border border-line">+10K</div>
+        </div>
+        <div class="text-sm text-silver-500">
+          <div class="flex items-center gap-1.5">
+            <div class="flex text-silver-300">
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+              <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+            </div>
+            <span class="font-medium text-silver-100">+10.000 emprendedores</span> ya conectados
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT 40% — Phones -->
+    <div class="lg:col-span-5 reveal relative h-[640px]">
+      <!-- silver glow -->
+      <div class="absolute -top-10 -right-10 w-80 h-80 rounded-full" style="background:radial-gradient(circle, rgba(255,255,255,.08), transparent 60%); filter: blur(20px);"></div>
+      <div class="absolute bottom-10 -left-10 w-80 h-80 rounded-full" style="background:radial-gradient(circle, rgba(233,30,99,.12), transparent 60%); filter: blur(30px);"></div>
+
+      <!-- Phone 1: swipe -->
+      <div class="absolute top-6 left-2 floaty-slow" style="--r:-6deg; transform: rotate(-6deg);">
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen">
+            <div class="h-full bg-gradient-to-b from-surface to-bg p-4 flex flex-col">
+              <div class="flex items-center justify-between pt-7 pb-3">
+                <div class="w-8 h-8 rounded-lg silver-bg"></div>
+                <div class="text-[11px] mono text-silver-600">Discover</div>
+                <div class="w-8 h-8 rounded-full bg-elev border border-line"></div>
+              </div>
+              <div class="relative flex-1">
+                <div class="absolute inset-x-6 top-8 bottom-24 rounded-3xl bg-elev border border-line rotate-6"></div>
+                <div class="absolute inset-x-3 top-4 bottom-20 rounded-3xl bg-elev border border-line rotate-3"></div>
+                <div class="absolute inset-x-0 top-0 bottom-16 rounded-3xl overflow-hidden border border-line2">
+                  <div class="h-[62%] bg-gradient-to-br from-silver-400 via-silver-600 to-bg relative">
+                    <div class="absolute top-3 left-3 right-3 flex gap-1">
+                      <div class="h-1 bg-silver-100 rounded-full flex-1"></div>
+                      <div class="h-1 bg-silver-100/30 rounded-full flex-1"></div>
+                      <div class="h-1 bg-silver-100/30 rounded-full flex-1"></div>
+                    </div>
+                    <div class="absolute bottom-3 right-3 bg-bg/80 backdrop-blur rounded-full px-2.5 py-1 text-[10px] mono text-silver-100 border border-line">92% match</div>
+                  </div>
+                  <div class="p-3 bg-surface">
+                    <div class="flex items-end justify-between">
+                      <div>
+                        <div class="font-semibold text-[14px] text-silver-100">Lucía Márquez, 28</div>
+                        <div class="text-[11px] text-silver-600">Barcelona · Producto</div>
+                      </div>
+                      <div class="w-6 h-6 rounded-full flex items-center justify-center" style="background:rgba(74,222,128,.15); color:#4ADE80;">
+                        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"><path d="m5 12 5 5L20 7"/></svg>
+                      </div>
+                    </div>
+                    <div class="mt-2 flex flex-wrap gap-1">
+                      <span class="px-2 py-0.5 rounded-full text-[10px]" style="background:#0F291A; color:#4ADE80;">UX/UI</span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px]" style="background:#0F291A; color:#4ADE80;">Growth</span>
+                      <span class="px-2 py-0.5 rounded-full text-[10px]" style="background:#0F1A2E; color:#60A5FA;">busca dev</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center justify-center gap-4 pb-3">
+                <div class="w-11 h-11 rounded-full bg-elev border border-line flex items-center justify-center text-silver-500">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+                </div>
+                <div class="w-14 h-14 rounded-full pink-bg text-white flex items-center justify-center" style="box-shadow: 0 8px 24px -6px rgba(233,30,99,.6);">
+                  <svg class="w-7 h-7" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.65-7 10-7 10z"/></svg>
+                </div>
+                <div class="w-11 h-11 rounded-full bg-elev border border-line flex items-center justify-center text-gold-400">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="m12 2 2.39 7.36H22l-6.2 4.5 2.4 7.36L12 16.72l-6.2 4.5 2.4-7.36L2 9.36h7.61z"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phone 2: match (pink) -->
+      <div class="absolute top-24 right-0 floaty-med" style="--r:5deg; transform: rotate(5deg);">
+        <div class="phone">
+          <div class="notch"></div>
+          <div class="screen pink-bg relative">
+            <div class="absolute inset-0" style="background:radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.25), transparent 60%);"></div>
+            <div class="relative h-full flex flex-col items-center justify-center text-white p-6 text-center">
+              <div class="mono uppercase text-[11px] tracking-[0.25em] opacity-80 mt-4">It's a match</div>
+              <h3 class="font-display font-bold text-[36px] leading-none mt-3">¡Hagamos<br/>magia!</h3>
+              <div class="relative mt-7 w-[190px] h-[110px]">
+                <div class="absolute left-0 top-0 w-[90px] h-[90px] rounded-full ring-4 ring-white bg-gradient-to-br from-silver-100 to-silver-500"></div>
+                <div class="absolute right-0 bottom-0 w-[90px] h-[90px] rounded-full ring-4 ring-white bg-gradient-to-br from-silver-300 to-silver-700"></div>
+                <div class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white text-pink-600 flex items-center justify-center shadow-lg">
+                  <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21s-7-4.35-7-10a5 5 0 0 1 9-3 5 5 0 0 1 9 3c0 5.65-7 10-7 10z"/></svg>
+                </div>
+              </div>
+              <p class="mt-6 text-[13px] opacity-90 max-w-[180px]">Tú y <b>Daniel R.</b> os disteis like.</p>
+              <button class="mt-auto mb-5 bg-white text-pink-600 font-semibold rounded-full px-5 py-2.5 text-[13px]">Enviar mensaje</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Phone 3: chat (small) -->
+      <div class="absolute bottom-2 left-8 floaty-slow" style="--r:-3deg; transform: rotate(-3deg); animation-delay: -2s;">
+        <div class="phone phone-sm">
+          <div class="notch"></div>
+          <div class="screen bg-surface">
+            <div class="h-full flex flex-col">
+              <div class="pt-7 pb-2 px-3 flex items-center gap-2 border-b border-line">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-br from-silver-300 to-silver-600"></div>
+                <div>
+                  <div class="text-[11px] font-semibold text-silver-100">Daniel R.</div>
+                  <div class="text-[9px] text-ok">En línea</div>
+                </div>
+              </div>
+              <div class="flex-1 p-2.5 space-y-1.5 bg-bg">
+                <div class="max-w-[75%] bg-elev border border-line rounded-xl rounded-tl-sm px-2 py-1.5 text-[10px] text-silver-100">Hey! Vi tu perfil, pareces el perfil técnico que necesito.</div>
+                <div class="max-w-[75%] ml-auto pink-bg text-white rounded-xl rounded-tr-sm px-2 py-1.5 text-[10px]">Justo buscaba alguien de growth. ¿Café el jueves?</div>
+                <div class="max-w-[75%] bg-elev border border-line rounded-xl rounded-tl-sm px-2 py-1.5 text-[10px] text-silver-100">Perfecto. Te mando calendario.</div>
+              </div>
+              <div class="p-2 border-t border-line flex items-center gap-1.5">
+                <div class="flex-1 h-7 rounded-full bg-elev border border-line"></div>
+                <div class="w-7 h-7 rounded-full pink-bg flex items-center justify-center">
+                  <svg class="w-3 h-3 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M2 21 23 12 2 3v7l15 2-15 2z"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Floating chips -->
+      <div class="absolute top-2 right-10 glass rounded-2xl px-3 py-2 flex items-center gap-2 rotate-[4deg] floaty-med" style="--r:4deg;">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(74,222,128,.12); color:#4ADE80;">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m12 3 2.25 5.25L20 9.5l-4 3.9.94 5.6L12 16l-4.94 3 .94-5.6-4-3.9 5.75-1.25z"/></svg>
+        </div>
+        <div>
+          <div class="text-[10px] mono text-silver-600 uppercase tracking-wider">ofrezco</div>
+          <div class="text-[13px] font-semibold text-silver-100">React Native</div>
+        </div>
+      </div>
+      <div class="absolute bottom-28 right-2 glass rounded-2xl px-3 py-2 flex items-center gap-2 -rotate-[4deg] floaty-slow" style="--r:-4deg;">
+        <div class="w-7 h-7 rounded-lg flex items-center justify-center" style="background:rgba(96,165,250,.12); color:#60A5FA;">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5l3 2"/></svg>
+        </div>
+        <div>
+          <div class="text-[10px] mono text-silver-600 uppercase tracking-wider">busco</div>
+          <div class="text-[13px] font-semibold text-silver-100">Marketing digital</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== LOGOS / PRESS ============== -->
+<section class="pt-4 pb-16 border-y border-line bg-surface" data-screen-label="02 Prensa">
+  <div class="max-w-[1320px] mx-auto px-6 lg:px-10">
+    <div class="text-center text-[12px] uppercase tracking-[0.25em] mono text-silver-600 mb-8">Como se ha visto en</div>
+    <div class="marquee">
+      <div class="marquee-track text-silver-500">
+        <div class="flex items-center gap-16 opacity-70">
+          <span class="font-display text-2xl font-semibold tracking-tight">El Emprendedor</span>
+          <span class="font-display text-2xl italic">Startup&Co</span>
+          <span class="font-display text-2xl font-bold tracking-tighter">TECHBEAT°</span>
+          <span class="font-display text-2xl font-light">Fundra ·</span>
+          <span class="font-display text-2xl font-semibold">HIVE NEWS</span>
+          <span class="font-display text-2xl font-semibold tracking-wider">LATAM/ VC</span>
+          <span class="font-display text-2xl font-bold">Pangea Weekly</span>
+        </div>
+        <div class="flex items-center gap-16 opacity-70" aria-hidden="true">
+          <span class="font-display text-2xl font-semibold tracking-tight">El Emprendedor</span>
+          <span class="font-display text-2xl italic">Startup&Co</span>
+          <span class="font-display text-2xl font-bold tracking-tighter">TECHBEAT°</span>
+          <span class="font-display text-2xl font-light">Fundra ·</span>
+          <span class="font-display text-2xl font-semibold">HIVE NEWS</span>
+          <span class="font-display text-2xl font-semibold tracking-wider">LATAM/ VC</span>
+          <span class="font-display text-2xl font-bold">Pangea Weekly</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PROBLEMA ============== -->
+<section class="py-section bg-bg" data-screen-label="03 Problema">
+  <div class="max-w-[1320px] mx-auto px-6 lg:px-10">
+    <div class="max-w-[720px] mb-16 reveal">
+      <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">El problema</div>
+      <h2 class="font-display font-semibold text-[48px] lg:text-[60px] leading-[1.02] tracking-tighter mt-3 text-silver-100">
+        Emprender solo es <span class="silver-text">ir a ciegas</span>.
+      </h2>
+      <p class="text-[18px] text-silver-500 mt-5">El 65% de las startups fallidas lo hacen por conflictos del equipo fundador. Y encontrar un buen partner es más duro que vender tu primer MVP.</p>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+      <div class="glass p-10 reveal">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-elev border border-line text-silver-300">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        </div>
+        <h3 class="font-display text-[24px] font-semibold tracking-tight text-silver-100">Buscar co-founder es imposible</h3>
+        <p class="text-silver-500 mt-3 leading-relaxed">Preguntas a amigos, publicas en foros, asistes a meetups… y tras 6 meses sigues sin un partner con skills complementarios.</p>
+        <div class="mt-6 mono text-[11px] text-silver-600 bg-elev border border-line inline-block px-2.5 py-1 rounded-md">avg. 7.2 meses</div>
+      </div>
+      <div class="glass p-10 reveal">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-elev border border-line text-silver-300">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 10h18"/><path d="M8 14h3"/></svg>
+        </div>
+        <h3 class="font-display text-[24px] font-semibold tracking-tight text-silver-100">LinkedIn no conecta emprendedores</h3>
+        <p class="text-silver-500 mt-3 leading-relaxed">InMails fríos, perfiles corporativos y cero contexto. No está diseñado para encontrar a alguien con quien jugártela.</p>
+        <div class="mt-6 mono text-[11px] text-silver-600 bg-elev border border-line inline-block px-2.5 py-1 rounded-md">2.3% tasa de respuesta</div>
+      </div>
+      <div class="glass p-10 reveal">
+        <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-6 bg-elev border border-line text-silver-300">
+          <svg class="w-7 h-7" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 class="font-display text-[24px] font-semibold tracking-tight text-silver-100">Los eventos no escalan</h3>
+        <p class="text-silver-500 mt-3 leading-relaxed">Entradas caras, dos horas en una sala, cinco tarjetas que no recuerdas. El networking analógico es un lujo ineficiente.</p>
+        <div class="mt-6 mono text-[11px] text-silver-600 bg-elev border border-line inline-block px-2.5 py-1 rounded-md">€450 / evento</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== CÓMO FUNCIONA ============== -->
+<section id="how" class="py-section bg-surface" data-screen-label="04 Cómo funciona">
+  <div class="max-w-[1320px] mx-auto px-6 lg:px-10">
+    <div class="flex items-end justify-between flex-wrap gap-6 mb-16 reveal">
+      <div class="max-w-[680px]">
+        <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Cómo funciona</div>
+        <h2 class="font-display font-semibold text-[48px] lg:text-[60px] leading-[1.02] tracking-tighter mt-3 text-silver-100">Tres pasos. Un co-founder.</h2>
+      </div>
+      <p class="text-silver-500 text-[18px] max-w-[380px]">Desde crear tu perfil hasta cerrar tu primera reunión. Normalmente, menos de una semana.</p>
+    </div>
+
+    <div class="relative grid lg:grid-cols-3 gap-10">
+      <div class="hidden lg:block absolute top-[104px] left-[14%] right-[14%] h-px" style="background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), rgba(233,30,99,0.4), transparent);"></div>
+
+      <!-- Step 1 -->
+      <div class="relative reveal">
+        <div class="flex items-center justify-between">
+          <div class="font-display font-bold text-[88px] leading-none silver-text">01</div>
+          <div class="phone phone-sm" style="transform: rotate(-3deg);">
+            <div class="notch"></div>
+            <div class="screen bg-gradient-to-b from-surface to-bg">
+              <div class="pt-9 p-3">
+                <div class="text-[10px] mono text-silver-600 uppercase tracking-widest">Tus skills</div>
+                <div class="mt-2 text-[14px] font-semibold text-silver-100">Ofrezco</div>
+                <div class="mt-1.5 flex flex-wrap gap-1">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full" style="background:#0F291A; color:#4ADE80;">React Native</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full" style="background:#0F291A; color:#4ADE80;">Backend</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full border border-line text-silver-500">+ añadir</span>
+                </div>
+                <div class="mt-4 text-[14px] font-semibold text-silver-100">Busco</div>
+                <div class="mt-1.5 flex flex-wrap gap-1">
+                  <span class="text-[10px] px-2 py-0.5 rounded-full" style="background:#0F1A2E; color:#60A5FA;">Marketing</span>
+                  <span class="text-[10px] px-2 py-0.5 rounded-full" style="background:#0F1A2E; color:#60A5FA;">Ventas B2B</span>
+                </div>
+                <div class="mt-4 h-1.5 w-full bg-elev rounded-full overflow-hidden">
+                  <div class="h-full silver-bg" style="width: 72%"></div>
+                </div>
+                <div class="mt-1 text-[9px] mono text-silver-600">Perfil 72%</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3 class="font-display text-[26px] font-semibold mt-8 tracking-tight text-silver-100">Define lo que <i class="silver-text not-italic">ofreces</i> y lo que <i class="silver-text not-italic">buscas</i></h3>
+        <p class="text-silver-500 mt-2">Skills, sector, ubicación, dedicación. Cuanto más claro, mejores matches.</p>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="relative reveal">
+        <div class="flex items-center justify-between">
+          <div class="font-display font-bold text-[88px] leading-none silver-text">02</div>
+          <div class="phone phone-sm" style="transform: rotate(2deg);">
+            <div class="notch"></div>
+            <div class="screen bg-bg">
+              <div class="pt-9 px-3">
+                <div class="text-[10px] mono text-silver-600 uppercase tracking-widest">Discover</div>
+                <div class="mt-2 relative h-[200px]">
+                  <div class="absolute inset-x-4 top-2 h-full rounded-2xl bg-elev border border-line rotate-6"></div>
+                  <div class="absolute inset-x-2 top-1 h-full rounded-2xl bg-elev border border-line rotate-3"></div>
+                  <div class="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-silver-500 to-surface border border-line2">
+                    <div class="absolute bottom-0 inset-x-0 p-2 bg-gradient-to-t from-black/80 to-transparent text-white">
+                      <div class="text-[12px] font-semibold">Andrea P.</div>
+                      <div class="text-[10px] opacity-80">Full-stack · Madrid</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="mt-3 flex justify-center gap-2">
+                  <div class="w-7 h-7 rounded-full bg-elev border border-line flex items-center justify-center text-silver-500 text-xs">✕</div>
+                  <div class="w-7 h-7 rounded-full pink-bg text-white flex items-center justify-center text-xs">♥</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3 class="font-display text-[26px] font-semibold mt-8 tracking-tight text-silver-100">Haz <i class="silver-text not-italic">swipe</i> entre perfiles filtrados</h3>
+        <p class="text-silver-500 mt-2">Verificados por email, LinkedIn y prueba rápida. Solo gente real con idea real.</p>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="relative reveal">
+        <div class="flex items-center justify-between">
+          <div class="font-display font-bold text-[88px] leading-none silver-text">03</div>
+          <div class="phone phone-sm" style="transform: rotate(-2deg);">
+            <div class="notch"></div>
+            <div class="screen bg-surface">
+              <div class="pt-9 px-2">
+                <div class="flex items-center gap-2 pb-2 border-b border-line">
+                  <div class="w-7 h-7 rounded-full bg-gradient-to-br from-silver-300 to-silver-600"></div>
+                  <div>
+                    <div class="text-[11px] font-semibold text-silver-100">Sergio V.</div>
+                    <div class="text-[9px] text-ok">Nuevo match</div>
+                  </div>
+                </div>
+                <div class="py-2 space-y-1.5">
+                  <div class="max-w-[75%] bg-elev border border-line rounded-xl rounded-tl-sm px-2 py-1 text-[10px] text-silver-100">¡Hola! Vi que buscas CMO.</div>
+                  <div class="max-w-[75%] ml-auto pink-bg text-white rounded-xl rounded-tr-sm px-2 py-1 text-[10px]">Sí! ¿Café esta semana?</div>
+                  <div class="max-w-[75%] bg-elev border border-line rounded-xl rounded-tl-sm px-2 py-1 text-[10px] text-silver-100">Martes a las 10.</div>
+                </div>
+                <div class="mt-2 flex items-center gap-1 border-t border-line pt-2">
+                  <div class="flex-1 h-6 rounded-full bg-elev border border-line"></div>
+                  <div class="w-6 h-6 rounded-full pink-bg"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <h3 class="font-display text-[26px] font-semibold mt-8 tracking-tight text-silver-100">Hablad, validad y <i class="silver-text not-italic">construid</i></h3>
+        <p class="text-silver-500 mt-2">Chat integrado, agenda compartida y plantillas para alinear visión antes de firmar nada.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FEATURES — BENTO ============== -->
+<section id="features" class="py-section bg-bg" data-screen-label="05 Features">
+  <div class="max-w-[1320px] mx-auto px-6 lg:px-10">
+    <div class="flex items-end justify-between flex-wrap gap-6 mb-14 reveal">
+      <div class="max-w-[720px]">
+        <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Features</div>
+        <h2 class="font-display font-semibold text-[48px] lg:text-[60px] leading-[1.02] tracking-tighter mt-3 text-silver-100">
+          Todo lo que necesitas, nada de lo que sobra.
+        </h2>
+      </div>
+      <p class="text-silver-500 text-[18px] max-w-[360px]">Una app pulida, pensada para la intención más concreta del mundo emprendedor: <span class="text-silver-100 font-medium">encontrar equipo</span>.</p>
+    </div>
+
+    <div class="bento">
+      <!-- Tile 1: wide feature -->
+      <div class="tile col-span-6 row-span-2 glass" style="grid-column: span 6;">
+        <div class="grid md:grid-cols-2 gap-0 h-full">
+          <div class="tile-body justify-between">
+            <div>
+              <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Matching inteligente</div>
+              <h3 class="font-display text-[40px] lg:text-[48px] font-semibold tracking-tighter leading-[1.02] mt-3 text-silver-100">
+                Skills que <span class="silver-text">encajan</span>, no listados que se parecen.
+              </h3>
+              <p class="text-silver-500 mt-4 max-w-[440px]">Nuestro motor cruza lo que ofreces con lo que otros buscan (y viceversa). Resultado: menos swipes, más matches útiles.</p>
+            </div>
+            <div class="flex items-center gap-6 mt-6">
+              <div>
+                <div class="font-display text-[32px] font-semibold tracking-tight silver-text">92%</div>
+                <div class="text-[12px] mono text-silver-600 uppercase tracking-wider">Compatibilidad</div>
+              </div>
+              <div class="w-px h-10 bg-line"></div>
+              <div>
+                <div class="font-display text-[32px] font-semibold tracking-tight silver-text">3.4×</div>
+                <div class="text-[12px] mono text-silver-600 uppercase tracking-wider">Match rate</div>
+              </div>
+            </div>
+          </div>
+          <div class="relative bg-surface p-6 flex items-center justify-center border-l border-line">
+            <div class="absolute inset-0 dot-bg opacity-50"></div>
+            <div class="relative w-full max-w-[420px] bg-elev border border-line rounded-2xl p-5">
+              <div class="flex items-center justify-between text-[11px] mono text-silver-600 uppercase tracking-wider">
+                <span>Match · Lucía ↔ Tú</span>
+                <span class="text-silver-100">92%</span>
+              </div>
+              <div class="mt-4 space-y-3">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-br from-silver-300 to-silver-600"></div>
+                  <div class="flex-1">
+                    <div class="text-[11px] mono text-silver-600 uppercase tracking-wider">ofrece</div>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                      <span class="text-[11px] px-2 py-0.5 rounded-full" style="background:#0F291A; color:#4ADE80;">UX/UI</span>
+                      <span class="text-[11px] px-2 py-0.5 rounded-full" style="background:#0F291A; color:#4ADE80;">Growth</span>
+                      <span class="text-[11px] px-2 py-0.5 rounded-full" style="background:#0F291A; color:#4ADE80;">Product</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="pl-12 text-center text-silver-500 text-sm">↕</div>
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-gradient-to-br from-silver-500 to-silver-700"></div>
+                  <div class="flex-1">
+                    <div class="text-[11px] mono text-silver-600 uppercase tracking-wider">buscas</div>
+                    <div class="flex flex-wrap gap-1 mt-1">
+                      <span class="text-[11px] px-2 py-0.5 rounded-full" style="background:#0F1A2E; color:#60A5FA;">UX/UI</span>
+                      <span class="text-[11px] px-2 py-0.5 rounded-full" style="background:#0F1A2E; color:#60A5FA;">Growth</span>
+                      <span class="text-[11px] px-2 py-0.5 rounded-full border border-line text-silver-600">Sales</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="mt-5 h-2 bg-surface rounded-full overflow-hidden border border-line">
+                <div class="h-full silver-bg" style="width:92%"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tile 2: swipe -->
+      <div class="tile col-span-3 row-span-2 glass" style="grid-column: span 3;">
+        <div class="tile-body">
+          <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Swipe rápido</div>
+          <h3 class="font-display text-[28px] font-semibold tracking-tight mt-2 text-silver-100">Decide en 2 segundos, no en 2 semanas</h3>
+          <div class="relative flex-1 mt-5">
+            <div class="absolute left-6 top-6 right-6 bottom-0 rounded-2xl pink-bg rotate-6 opacity-60"></div>
+            <div class="absolute left-3 top-3 right-3 bottom-0 rounded-2xl bg-gradient-to-br from-silver-400 to-silver-700 rotate-3"></div>
+            <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-silver-300 via-silver-500 to-surface border border-line2 flex items-end p-5 text-silver-100">
+              <div>
+                <div class="text-[11px] mono text-silver-700 uppercase tracking-wider">Marta L. · CTO</div>
+                <div class="font-display text-[22px] font-semibold leading-tight mt-1 text-bg">Madrid · Fintech</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tile 3: verified -->
+      <div class="tile col-span-3 row-span-1 glass" style="grid-column: span 3;">
+        <div class="tile-body">
+          <div class="flex items-start justify-between">
+            <div>
+              <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Perfiles verificados</div>
+              <h3 class="font-display text-[22px] font-semibold tracking-tight mt-2 text-silver-100">Solo humanos reales con idea real</h3>
+            </div>
+            <div class="w-11 h-11 rounded-xl flex items-center justify-center" style="background:rgba(74,222,128,.12); color:#4ADE80; border:1px solid rgba(74,222,128,.25);">
+              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tile 4: filters -->
+      <div class="tile col-span-3 row-span-1 glass" style="grid-column: span 3;">
+        <div class="tile-body">
+          <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Filtros finos</div>
+          <h3 class="font-display text-[22px] font-semibold tracking-tight mt-2 text-silver-100">Ubicación, sector, dedicación, intereses</h3>
+          <div class="flex flex-wrap gap-1.5 mt-3">
+            <span class="text-xs px-2.5 py-1 rounded-full bg-elev border border-line text-silver-300">Madrid</span>
+            <span class="text-xs px-2.5 py-1 rounded-full" style="background:#0F1A2E; color:#60A5FA;">Fintech</span>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-elev border border-line text-silver-300">Full-time</span>
+            <span class="text-xs px-2.5 py-1 rounded-full" style="background:var(--pink-tint); color:#E91E63;">25–35</span>
+            <span class="text-xs px-2.5 py-1 rounded-full bg-elev border border-line text-silver-300">Remoto ok</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tile 5: chat -->
+      <div class="tile col-span-2 row-span-1 glass" style="grid-column: span 2;">
+        <div class="tile-body">
+          <div class="w-11 h-11 rounded-xl bg-elev border border-line text-silver-300 flex items-center justify-center mb-3">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <h3 class="font-display text-[20px] font-semibold tracking-tight text-silver-100">Chat integrado</h3>
+          <p class="text-silver-500 text-sm mt-1">Sin migrar a WhatsApp hasta que decidáis.</p>
+        </div>
+      </div>
+
+      <!-- Tile 6: Premium gold -->
+      <div class="tile col-span-2 row-span-1 relative overflow-hidden rounded-[20px]" style="grid-column: span 2; background: linear-gradient(135deg, #1A1A1A 0%, #0A0A0A 100%); border:1px solid rgba(201,168,76,.4);">
+        <div class="absolute inset-0" style="background: radial-gradient(ellipse at top right, rgba(201,168,76,.18), transparent 60%);"></div>
+        <div class="tile-body relative">
+          <div class="mono text-xs uppercase tracking-[0.25em] gold-text">Premium</div>
+          <h3 class="font-display text-[22px] font-semibold tracking-tight mt-2 text-silver-100">Super-likes, swipes ilimitados y ve quién te dio like</h3>
+        </div>
+      </div>
+
+      <!-- Tile 7: Privacy -->
+      <div class="tile col-span-2 row-span-1 glass" style="grid-column: span 2;">
+        <div class="tile-body">
+          <div class="w-11 h-11 rounded-xl flex items-center justify-center mb-3" style="background:var(--pink-tint); color:#E91E63; border:1px solid rgba(233,30,99,.3);">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 4 6v6c0 5 3.5 9 8 10 4.5-1 8-5 8-10V6z"/></svg>
+          </div>
+          <h3 class="font-display text-[20px] font-semibold tracking-tight text-silver-100">Privacidad radical</h3>
+          <p class="text-silver-500 text-sm mt-1">Tus ideas son tuyas hasta que haya match mutuo.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== STATS ============== -->
+<section class="relative overflow-hidden" data-screen-label="06 Stats">
+  <div class="py-24 relative" style="background: linear-gradient(180deg, #0A0A0A 0%, #141414 50%, #0A0A0A 100%);">
+    <div class="absolute inset-0 grid-bg opacity-40"></div>
+    <div class="absolute inset-0" style="background: radial-gradient(ellipse at top, rgba(255,255,255,.04), transparent 50%);"></div>
+    <div class="relative max-w-[1320px] mx-auto px-6 lg:px-10 grid md:grid-cols-4 gap-8">
+      <div class="reveal">
+        <div class="font-display font-bold text-[64px] lg:text-[80px] leading-none tracking-tighter silver-text">10K<span class="text-pink-500">+</span></div>
+        <div class="mt-2 text-silver-500">Usuarios activos</div>
+      </div>
+      <div class="reveal">
+        <div class="font-display font-bold text-[64px] lg:text-[80px] leading-none tracking-tighter silver-text">2.5K<span class="text-pink-500">+</span></div>
+        <div class="mt-2 text-silver-500">Matches cada mes</div>
+      </div>
+      <div class="reveal">
+        <div class="font-display font-bold text-[64px] lg:text-[80px] leading-none tracking-tighter silver-text">200<span class="text-pink-500">+</span></div>
+        <div class="mt-2 text-silver-500">Startups fundadas</div>
+      </div>
+      <div class="reveal">
+        <div class="font-display font-bold text-[64px] lg:text-[80px] leading-none tracking-tighter silver-text">4.9<span class="text-pink-500">★</span></div>
+        <div class="mt-2 text-silver-500">App Store rating</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== PREMIUM ============== -->
+<section id="premium" class="py-section bg-bg" data-screen-label="07 Premium">
+  <div class="max-w-[1320px] mx-auto px-6 lg:px-10">
+    <div class="text-center max-w-[720px] mx-auto mb-14 reveal">
+      <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Planes</div>
+      <h2 class="font-display font-semibold text-[48px] lg:text-[60px] leading-[1.02] tracking-tighter mt-3 text-silver-100">
+        Empieza gratis. <span class="gold-text">Mejora cuando quieras</span>.
+      </h2>
+      <p class="text-silver-500 text-[18px] mt-5">Sin paywalls raros. Premium multiplica tu alcance cuando estás listo para mover ficha.</p>
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-8 max-w-[1080px] mx-auto">
+      <!-- Free -->
+      <div class="glass p-10 reveal">
+        <div class="flex items-center justify-between">
+          <div>
+            <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Free</div>
+            <h3 class="font-display text-[32px] font-semibold tracking-tight mt-1 text-silver-100">Para empezar</h3>
+          </div>
+          <div class="text-right">
+            <div class="font-display text-[48px] font-bold tracking-tighter leading-none text-silver-100">€0</div>
+            <div class="mono text-[12px] text-silver-600">/ para siempre</div>
+          </div>
+        </div>
+        <ul class="mt-8 space-y-3 text-silver-300">
+          <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full bg-elev border border-line text-silver-300 flex items-center justify-center text-[11px]">✓</span> 5 swipes al día</li>
+          <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full bg-elev border border-line text-silver-300 flex items-center justify-center text-[11px]">✓</span> Chat tras match mutuo</li>
+          <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full bg-elev border border-line text-silver-300 flex items-center justify-center text-[11px]">✓</span> Filtros básicos (skills, ubicación)</li>
+          <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full bg-elev border border-line text-silver-300 flex items-center justify-center text-[11px]">✓</span> Perfil verificado</li>
+          <li class="flex items-start gap-3 text-silver-700"><span class="mt-1 w-5 h-5 rounded-full bg-elev border border-line text-silver-700 flex items-center justify-center text-[11px]">—</span> Ver quién te dio like</li>
+          <li class="flex items-start gap-3 text-silver-700"><span class="mt-1 w-5 h-5 rounded-full bg-elev border border-line text-silver-700 flex items-center justify-center text-[11px]">—</span> Super-likes</li>
+        </ul>
+        <a href="#download" class="mt-10 inline-flex btn-ghost items-center justify-center w-full py-3.5 rounded-xl font-medium">Descargar gratis</a>
+      </div>
+
+      <!-- Premium (gold) -->
+      <div class="relative rounded-[24px] p-[1.5px] reveal" style="background: linear-gradient(180deg, #E6CD85 0%, #A67C2E 100%);">
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+          <div class="gold-bg text-bg text-[11px] mono uppercase tracking-[0.2em] px-3 py-1.5 rounded-full font-semibold" style="box-shadow: 0 10px 30px -10px rgba(201,168,76,.55);">Más popular</div>
+        </div>
+        <div class="rounded-[22px] p-10 relative overflow-hidden" style="background: linear-gradient(180deg, #1A1A1A 0%, #0A0A0A 100%);">
+          <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full" style="background: radial-gradient(circle, rgba(201,168,76,.12), transparent 60%);"></div>
+          <div class="relative flex items-center justify-between">
+            <div>
+              <div class="mono text-xs uppercase tracking-[0.25em] gold-text">Premium</div>
+              <h3 class="font-display text-[32px] font-semibold tracking-tight mt-1 text-silver-100">Para ir en serio</h3>
+            </div>
+            <div class="text-right">
+              <div class="font-display text-[48px] font-bold tracking-tighter leading-none text-silver-100">€9<span class="text-[24px] text-silver-600">,99</span></div>
+              <div class="mono text-[12px] text-silver-600">/ mes</div>
+            </div>
+          </div>
+          <ul class="mt-8 space-y-3 text-silver-300 relative">
+            <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full gold-bg text-bg flex items-center justify-center text-[11px] font-bold">✓</span> <b class="text-silver-100">Swipes ilimitados</b> cada día</li>
+            <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full gold-bg text-bg flex items-center justify-center text-[11px] font-bold">✓</span> <b class="text-silver-100">Ver quién te dio like</b> en tiempo real</li>
+            <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full gold-bg text-bg flex items-center justify-center text-[11px] font-bold">✓</span> <b class="text-silver-100">Super-likes ilimitados</b></li>
+            <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full gold-bg text-bg flex items-center justify-center text-[11px] font-bold">✓</span> Filtros avanzados (dedicación, stage)</li>
+            <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full gold-bg text-bg flex items-center justify-center text-[11px] font-bold">✓</span> Boost semanal de perfil</li>
+            <li class="flex items-start gap-3"><span class="mt-1 w-5 h-5 rounded-full gold-bg text-bg flex items-center justify-center text-[11px] font-bold">✓</span> Prioridad en soporte</li>
+          </ul>
+          <a href="#download" class="mt-10 inline-flex items-center justify-center w-full py-3.5 rounded-xl font-semibold gold-bg text-bg" style="box-shadow: 0 10px 30px -10px rgba(201,168,76,.55);">Empezar Premium</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== TESTIMONIOS ============== -->
+<section class="py-section bg-surface" data-screen-label="08 Testimonios">
+  <div class="max-w-[1320px] mx-auto px-6 lg:px-10">
+    <div class="flex items-end justify-between flex-wrap gap-6 mb-12 reveal">
+      <div class="max-w-[700px]">
+        <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">Historias</div>
+        <h2 class="font-display font-semibold text-[48px] lg:text-[60px] leading-[1.02] tracking-tighter mt-3 text-silver-100">Matches que se convirtieron en empresas.</h2>
+      </div>
+      <div class="flex gap-2">
+        <button id="tPrev" class="w-11 h-11 rounded-full border border-line bg-surface hover:bg-elev transition flex items-center justify-center text-silver-300" aria-label="Anterior">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+        </button>
+        <button id="tNext" class="w-11 h-11 rounded-full border border-line bg-surface hover:bg-elev transition flex items-center justify-center text-silver-300" aria-label="Siguiente">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <div id="tscroll" class="tscroll overflow-x-auto no-scrollbar flex gap-6 pb-2 -mx-6 px-6">
+      <article class="glass p-8 min-w-[380px] max-w-[380px] reveal">
+        <div class="flex gap-1 text-silver-300 mb-4">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+        </div>
+        <p class="font-display text-[22px] leading-snug tracking-tight text-silver-100">"Conocí a mi CTO en CoFound un martes. En tres semanas teníamos MVP, ronda pre-seed y un nombre decente."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="w-11 h-11 rounded-full bg-gradient-to-br from-silver-300 to-silver-600"></div>
+          <div>
+            <div class="font-semibold text-sm text-silver-100">Paula Giménez</div>
+            <div class="text-xs text-silver-600">CEO, Sienta · Valencia</div>
+          </div>
+        </div>
+      </article>
+      <article class="glass p-8 min-w-[380px] max-w-[380px] reveal">
+        <div class="flex gap-1 text-silver-300 mb-4">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+        </div>
+        <p class="font-display text-[22px] leading-snug tracking-tight text-silver-100">"Después de un año rebotando entre eventos, por fin encontré a alguien con quien construir. CoFound entiende lo que un emprendedor necesita."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="w-11 h-11 rounded-full bg-gradient-to-br from-silver-400 to-silver-700"></div>
+          <div>
+            <div class="font-semibold text-sm text-silver-100">Mateo Salas</div>
+            <div class="text-xs text-silver-600">Co-founder, Helibee · CDMX</div>
+          </div>
+        </div>
+      </article>
+      <article class="glass p-8 min-w-[380px] max-w-[380px] reveal">
+        <div class="flex gap-1 text-silver-300 mb-4">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+        </div>
+        <p class="font-display text-[22px] leading-snug tracking-tight text-silver-100">"El filtro por skills complementarios es oro puro. En 48h había tenido cinco conversaciones reales con perfiles comerciales."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="w-11 h-11 rounded-full bg-gradient-to-br from-silver-300 to-silver-500"></div>
+          <div>
+            <div class="font-semibold text-sm text-silver-100">Iria Costa</div>
+            <div class="text-xs text-silver-600">CTO, Pluma · Lisboa</div>
+          </div>
+        </div>
+      </article>
+      <article class="glass p-8 min-w-[380px] max-w-[380px] reveal">
+        <div class="flex gap-1 text-silver-300 mb-4">
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+          <svg class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M10 15.27 16.18 19l-1.64-7.03L20 7.24l-7.19-.61L10 0 7.19 6.63 0 7.24l5.46 4.73L3.82 19z"/></svg>
+        </div>
+        <p class="font-display text-[22px] leading-snug tracking-tight text-silver-100">"Soy estudiante de último año y encontré a mi CMO en la app. Vamos a lanzar mi TFG como startup real."</p>
+        <div class="mt-6 flex items-center gap-3">
+          <div class="w-11 h-11 rounded-full bg-gradient-to-br from-silver-400 to-silver-600"></div>
+          <div>
+            <div class="font-semibold text-sm text-silver-100">Javier Núñez</div>
+            <div class="text-xs text-silver-600">Fundador, Foli · Sevilla</div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FAQ ============== -->
+<section id="faq" class="py-section bg-bg" data-screen-label="09 FAQ">
+  <div class="max-w-[820px] mx-auto px-6 lg:px-10">
+    <div class="text-center mb-12 reveal">
+      <div class="mono text-xs uppercase tracking-[0.25em] text-silver-600">FAQ</div>
+      <h2 class="font-display font-semibold text-[44px] lg:text-[56px] leading-[1.02] tracking-tighter mt-3 text-silver-100">
+        Preguntas frecuentes
+      </h2>
+    </div>
+
+    <div class="reveal">
+      <div class="faq-item">
+        <div class="faq-q">
+          <span class="font-display text-[20px] font-semibold tracking-tight text-silver-100">¿Es gratis usar CoFound?</span>
+          <svg class="chev w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="faq-a"><p>Sí. Puedes registrarte, hacer hasta 5 swipes al día, ver matches y chatear sin pagar nada. Premium desbloquea swipes ilimitados, super-likes ilimitados y saber quién te dio like.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">
+          <span class="font-display text-[20px] font-semibold tracking-tight text-silver-100">¿En qué se diferencia de LinkedIn?</span>
+          <svg class="chev w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="faq-a"><p>LinkedIn está hecho para CVs y ofertas de empleo. CoFound está hecho exclusivamente para que dos emprendedores con skills complementarios se encuentren con intención de construir juntos.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">
+          <span class="font-display text-[20px] font-semibold tracking-tight text-silver-100">¿Cómo se verifican los perfiles?</span>
+          <svg class="chev w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="faq-a"><p>Con verificación por email, LinkedIn y un pequeño prompt de onboarding que demuestra que eres humano y tienes contexto emprendedor mínimo.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">
+          <span class="font-display text-[20px] font-semibold tracking-tight text-silver-100">¿En qué países está disponible?</span>
+          <svg class="chev w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="faq-a"><p>Actualmente en España, México, Colombia, Argentina y Chile. Abriendo Perú, Portugal y Brasil en 2026.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">
+          <span class="font-display text-[20px] font-semibold tracking-tight text-silver-100">¿Puedo cancelar Premium cuando quiera?</span>
+          <svg class="chev w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="faq-a"><p>Sí, desde los ajustes de tu cuenta. Sin penalización ni preguntas. Conservas tus matches y chats aunque vuelvas al plan gratuito.</p></div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q">
+          <span class="font-display text-[20px] font-semibold tracking-tight text-silver-100">¿Y mi idea? ¿La protegéis?</span>
+          <svg class="chev w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        </div>
+        <div class="faq-a"><p>Tu perfil muestra skills y sector, no tu idea detallada. Recomendamos compartir la tesis completa una vez haya match mutuo y confianza, y facilitamos una plantilla ligera de NDA en el chat.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== CTA FINAL ============== -->
+<section id="download" class="relative overflow-hidden" data-screen-label="10 CTA">
+  <div class="py-24 relative" style="background: linear-gradient(180deg, #141414 0%, #0A0A0A 100%);">
+    <div class="absolute inset-0" style="background: radial-gradient(ellipse at center, rgba(233,30,99,.08), transparent 55%);"></div>
+    <div class="absolute inset-0 grid-bg opacity-40"></div>
+    <div class="relative max-w-[1100px] mx-auto px-6 lg:px-10 text-center reveal">
+      <img src="assets/logo-mark.png" alt="" class="w-20 h-20 object-contain logo-glow mx-auto mb-8" />
+      <h2 class="font-display font-semibold text-[56px] lg:text-[88px] leading-[0.98] tracking-tighter silver-text">
+        Deja de emprender solo.
+      </h2>
+      <p class="mt-6 text-[19px] text-silver-500 max-w-[640px] mx-auto">Descarga CoFound y empieza a conocer a tu próximo equipo esta semana. En serio.</p>
+      <div class="mt-10 flex flex-wrap items-center justify-center gap-3">
+        <a href="javascript:void(0)" onclick="alert('Próximamente disponible en iOS. Por ahora descarga el APK para Android.');" class="store-badge">
+          <svg viewBox="0 0 24 24" class="w-7 h-7" fill="currentColor"><path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.08zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+          <div class="text-left"><div class="sm">Próximamente</div><div class="lg">App Store</div></div>
+        </a>
+        <a href="https://github.com/paablooguillenn/CoFound/releases/latest/download/cofound.apk" download="cofound.apk" class="store-badge">
+          <svg viewBox="0 0 24 24" class="w-7 h-7" fill="currentColor"><path d="M3.6 2.7c-.37.39-.6.99-.6 1.78v15.04c0 .79.23 1.39.6 1.78l.07.07L13 12.1v-.2L3.67 2.63l-.07.07zM17.5 15.6l-3.06-1.77-2.94 2.94 3.05 3.05c.9.51 1.57.04 1.95-.31l.99-.57c1.31-.75 1.31-1.97 0-2.72l-.99-.62zM13.5 11.9L4.3 2.7 14.44 8.63l2.94 1.7-3.88 1.57zM4.3 21.3l9.2-9.2-3.06 1.77L4.3 21.3z"/></svg>
+          <div class="text-left"><div class="sm">Descargar APK</div><div class="lg">Android</div></div>
+        </a>
+      </div>
+      <div class="mt-6">
+        <a href="https://github.com/paablooguillenn/CoFound/releases/latest/download/cofound.apk" download="cofound.apk" class="inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-[16px] font-semibold cursor-pointer transition" style="background: linear-gradient(135deg, #E91E63 0%, #C2185B 100%); color: white; box-shadow: 0 12px 36px -8px rgba(233,30,99,.5);">
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
+          Descargar APK · v2.4
+          <span class="text-[11px] mono opacity-70 px-2 py-0.5 rounded-full bg-white/15">Android</span>
+        </a>
+      </div>
+      <div class="mt-8 text-xs mono text-silver-600 uppercase tracking-[0.2em]">Sin tarjeta · Sin fricción · Sin eventos caros</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============== FOOTER ============== -->
+<footer class="relative bg-bg text-silver-300 overflow-hidden border-t border-line" data-screen-label="11 Footer">
+  <div class="max-w-[1320px] mx-auto px-6 lg:px-10 pt-24 pb-12 relative">
+    <div class="grid lg:grid-cols-12 gap-10 relative z-10">
+      <div class="lg:col-span-4">
+        <a href="#" class="flex items-center gap-2.5">
+          <img src="assets/logo-mark.png" alt="CoFound" class="w-9 h-9 object-contain logo-glow" />
+          <span class="font-display font-semibold text-[19px] tracking-tight silver-text">CoFound</span>
+        </a>
+        <p class="mt-4 text-silver-600 text-sm max-w-[300px]">La app donde los emprendedores encuentran al equipo que les faltaba.</p>
+        <div class="mt-6 flex gap-2">
+          <a href="#" class="w-9 h-9 rounded-lg bg-elev border border-line hover:border-line2 flex items-center justify-center transition text-silver-300" aria-label="Twitter"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M22 5.8c-.7.3-1.5.6-2.3.7.8-.5 1.5-1.3 1.8-2.2-.8.5-1.7.8-2.6 1a4.1 4.1 0 0 0-7 3.7C8.5 8.8 5.5 7.2 3.5 4.8c-.4.7-.6 1.5-.6 2.4 0 1.4.7 2.7 1.8 3.4-.7 0-1.3-.2-1.9-.5v.1c0 2 1.4 3.7 3.3 4.1-.3.1-.7.2-1.1.2l-.8-.1c.5 1.7 2.1 2.9 3.9 2.9-1.4 1.1-3.2 1.8-5.2 1.8H2c1.8 1.2 4 1.9 6.3 1.9 7.5 0 11.7-6.3 11.7-11.7v-.5c.8-.6 1.5-1.3 2-2.1z"/></svg></a>
+          <a href="#" class="w-9 h-9 rounded-lg bg-elev border border-line hover:border-line2 flex items-center justify-center transition text-silver-300" aria-label="Instagram"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor"/></svg></a>
+          <a href="#" class="w-9 h-9 rounded-lg bg-elev border border-line hover:border-line2 flex items-center justify-center transition text-silver-300" aria-label="LinkedIn"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5zM3 9h4v12H3zM10 9h3.8v1.7h.1c.5-1 1.9-2 4-2 4.3 0 5.1 2.8 5.1 6.5V21h-4v-5.4c0-1.3 0-3-1.8-3s-2.2 1.4-2.2 2.9V21h-4z"/></svg></a>
+          <a href="#" class="w-9 h-9 rounded-lg bg-elev border border-line hover:border-line2 flex items-center justify-center transition text-silver-300" aria-label="TikTok"><svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><path d="M16 3v2.5c0 2.5 2 4.5 4.5 4.5V13c-1.7 0-3.3-.5-4.5-1.5V17a5 5 0 1 1-5-5v3a2 2 0 1 0 2 2V3z"/></svg></a>
+        </div>
+      </div>
+      <div class="lg:col-span-8 grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div>
+          <div class="mono text-[11px] uppercase tracking-[0.2em] text-silver-600">Producto</div>
+          <ul class="mt-4 space-y-2.5 text-sm text-silver-400">
+            <li><a href="#features" class="hover:text-silver-100 transition">Features</a></li>
+            <li><a href="#how" class="hover:text-silver-100 transition">Cómo funciona</a></li>
+            <li><a href="#premium" class="hover:text-silver-100 transition">Premium</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Descargar</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="mono text-[11px] uppercase tracking-[0.2em] text-silver-600">Empresa</div>
+          <ul class="mt-4 space-y-2.5 text-sm text-silver-400">
+            <li><a href="#" class="hover:text-silver-100 transition">Sobre nosotros</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Blog</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Careers</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Prensa</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="mono text-[11px] uppercase tracking-[0.2em] text-silver-600">Legal</div>
+          <ul class="mt-4 space-y-2.5 text-sm text-silver-400">
+            <li><a href="#" class="hover:text-silver-100 transition">Términos</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Privacidad</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Cookies</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Uso permitido</a></li>
+          </ul>
+        </div>
+        <div>
+          <div class="mono text-[11px] uppercase tracking-[0.2em] text-silver-600">Contacto</div>
+          <ul class="mt-4 space-y-2.5 text-sm text-silver-400">
+            <li><a href="mailto:hola@cofound.app" class="hover:text-silver-100 transition">hola@cofound.app</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Soporte</a></li>
+            <li><a href="#" class="hover:text-silver-100 transition">Partners</a></li>
+            <li class="text-silver-600">Madrid · CDMX</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="mt-16 flex items-center justify-between flex-wrap gap-4 border-t border-line pt-6 text-xs mono text-silver-600 relative z-10">
+      <div>© 2026 CoFound, S.L. Hecho con café en Madrid.</div>
+      <div>v2.4.1 · ES/LATAM</div>
+    </div>
+
+    <!-- Giant faded wordmark -->
+    <div class="pointer-events-none select-none absolute -bottom-10 left-0 right-0 text-center">
+      <span class="font-display font-bold tracking-tighter text-[18vw] leading-none silver-text opacity-10">CoFound</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ============== TWEAKS PANEL ============== -->
+<div id="tweaks">
+  <div class="flex items-center justify-between">
+    <h4>Tweaks</h4>
+    <button id="tweaksClose" class="w-7 h-7 rounded-full bg-elev border border-line flex items-center justify-center text-silver-300">
+      <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <label>Primario (plata)</label>
+  <div class="row"><input type="color" id="twPrimary" /><input type="text" id="twPrimaryHex" /></div>
+  <label>Acento (rosa)</label>
+  <div class="row"><input type="color" id="twAccent" /><input type="text" id="twAccentHex" /></div>
+  <label>Premium (dorado)</label>
+  <div class="row"><input type="color" id="twPremium" /><input type="text" id="twPremiumHex" /></div>
+  <label>Densidad</label>
+  <div class="row">
+    <select id="twDensity">
+      <option value="compact">Compact</option>
+      <option value="comfortable" selected>Comfortable</option>
+      <option value="spacious">Spacious</option>
+    </select>
+  </div>
+  <label>Titular Hero</label>
+  <textarea id="twHeadline" rows="2"></textarea>
+</div>
+
+<script>
+  // Scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Sticky nav morph
+  const navInner = document.getElementById('navInner');
+  const onScroll = () => {
+    if (window.scrollY > 20) {
+      navInner.classList.add('bg-surface/70','backdrop-blur-xl');
+      navInner.style.borderColor = 'var(--line)';
+    } else {
+      navInner.classList.remove('bg-surface/70','backdrop-blur-xl');
+      navInner.style.borderColor = 'transparent';
+    }
+  };
+  window.addEventListener('scroll', onScroll); onScroll();
+
+  // FAQ
+  document.querySelectorAll('.faq-item').forEach(item => {
+    const q = item.querySelector('.faq-q');
+    const a = item.querySelector('.faq-a');
+    q.addEventListener('click', () => {
+      const open = item.classList.toggle('open');
+      a.style.maxHeight = open ? a.scrollHeight + 'px' : '0px';
+    });
+  });
+
+  // Testimonial nav
+  const t = document.getElementById('tscroll');
+  document.getElementById('tNext').onclick = () => t.scrollBy({left: 400, behavior:'smooth'});
+  document.getElementById('tPrev').onclick = () => t.scrollBy({left:-400, behavior:'smooth'});
+
+  // Tweaks
+  const tweaks = {...TWEAK_DEFAULTS};
+  const applyTweaks = () => {
+    document.documentElement.style.setProperty('--silver', tweaks.primary);
+    document.documentElement.style.setProperty('--pink', tweaks.accent);
+    document.documentElement.style.setProperty('--gold-a', tweaks.premium);
+    document.body.setAttribute('data-density', tweaks.density);
+    const h1 = document.getElementById('heroHeadline');
+    if (h1 && tweaks.heroHeadline) {
+      h1.innerHTML = tweaks.heroHeadline.replace(/co-founder/i, '<span class="silver-text">co-founder</span>');
+    }
+  };
+  applyTweaks();
+  const $ = id => document.getElementById(id);
+  $('twPrimary').value = tweaks.primary; $('twPrimaryHex').value = tweaks.primary;
+  $('twAccent').value = tweaks.accent; $('twAccentHex').value = tweaks.accent;
+  $('twPremium').value = tweaks.premium; $('twPremiumHex').value = tweaks.premium;
+  $('twDensity').value = tweaks.density;
+  $('twHeadline').value = tweaks.heroHeadline;
+  const persist = (edits) => {
+    Object.assign(tweaks, edits); applyTweaks();
+    try { window.parent.postMessage({type:'__edit_mode_set_keys', edits}, '*'); } catch(e){}
+  };
+  const bindColor = (colorId, hexId, key) => {
+    $(colorId).addEventListener('input', e => { $(hexId).value = e.target.value; persist({[key]: e.target.value}); });
+    $(hexId).addEventListener('change', e => { $(colorId).value = e.target.value; persist({[key]: e.target.value}); });
+  };
+  bindColor('twPrimary','twPrimaryHex','primary');
+  bindColor('twAccent','twAccentHex','accent');
+  bindColor('twPremium','twPremiumHex','premium');
+  $('twDensity').addEventListener('change', e => persist({density: e.target.value}));
+  $('twHeadline').addEventListener('input', e => persist({heroHeadline: e.target.value}));
+
+  const panel = document.getElementById('tweaks');
+  document.getElementById('tweaksClose').onclick = () => panel.classList.remove('open');
+  window.addEventListener('message', (ev) => {
+    const d = ev?.data || {};
+    if (d.type === '__activate_edit_mode') panel.classList.add('open');
+    if (d.type === '__deactivate_edit_mode') panel.classList.remove('open');
+  });
+  try { window.parent.postMessage({type:'__edit_mode_available'}, '*'); } catch(e){}
+</script>
+
+</body>
+</html>
