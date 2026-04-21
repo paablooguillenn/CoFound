@@ -1,0 +1,63 @@
+name: cofound
+
+services:
+
+  # ─── Base de datos ────────────────────────────────────────────────────────────
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cofound
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - db_data:/var/lib/postgresql/data
+      # El schema se ejecuta automáticamente la primera vez que se crea el volumen
+      - ./backend/src/db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql:ro
+      - ./backend/src/db/seed.sql:/seed.sql:ro
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cofound"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  # ─── API Backend ──────────────────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/cofound
+      # ⚠️  Cambia JWT_SECRET por un valor seguro antes de compartir el proyecto
+      JWT_SECRET: cofound-dev-secret-change-in-production
+      JWT_EXPIRES_IN: 7d
+      CLIENT_URL: http://localhost:8081
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    ports:
+      - "4000:4000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # ─── App móvil (servidor de desarrollo Expo / Metro) ─────────────────────────
+  mobile:
+    build:
+      context: ./mobile
+    restart: unless-stopped
+    environment:
+      # 10.0.2.2 es la IP del host desde el emulador de Android
+      EXPO_PUBLIC_API_URL: http://10.0.2.2:4000/api
+      # Fuerza a Metro a anunciar la IP del host para que el emulador pueda conectarse
+      REACT_NATIVE_PACKAGER_HOSTNAME: 10.0.2.2
+    ports:
+      - "8081:8081"   # Metro bundler
+      - "19000:19000" # Expo Go (protocolo clásico)
+      - "19001:19001" # Expo DevTools
+    depends_on:
+      - backend
+
+volumes:
+  db_data:
