@@ -5,6 +5,8 @@ node_modules/
 dist/
 build/
 *.tsbuildinfo
+*.apk
+*.aab
 
 # Env (secrets)
 .env
