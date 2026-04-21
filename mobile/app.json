@@ -1,0 +1,21 @@
+{
+  "expo": {
+    "name": "CoFound",
+    "slug": "cofound",
+    "scheme": "cofound",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "backgroundColor": "#0F172A"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "android": {
+      "package": "com.cofound.app"
+    },
+    "ios": {
+      "bundleIdentifier": "com.cofound.app"
+    }
+  }
+}

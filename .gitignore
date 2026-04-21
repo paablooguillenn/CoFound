@@ -1,0 +1,34 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Env (secrets)
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE / editor
+.claude/
+.vscode/
+.idea/
+*.swp
+
+# Expo
+.expo/
+.expo-shared/
+web-build/
+
+# Tests
+coverage/
+
+# OS
+.DS_Store
+Thumbs.db
