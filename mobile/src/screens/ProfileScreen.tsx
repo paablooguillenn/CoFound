@@ -1,7 +1,10 @@
 import React, { useCallback, useState } from 'react';
 import {
   Alert,
+  Dimensions,
+  FlatList,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -12,7 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '../components/Avatar';
 import { InputField } from '../components/InputField';
@@ -26,6 +29,8 @@ import { spacing } from '../theme/spacing';
 import { Skill } from '../types/models';
 import { AppStackParamList } from '../types/navigation';
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
 const stringToSkills = (value: string): Skill[] =>
   value
     .split(',')
@@ -36,7 +41,9 @@ const stringToSkills = (value: string): Skill[] =>
 export const ProfileScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const { user, signOut, updateUser } = useAuth();
+  const insets = useSafeAreaInsets();
   const [editing, setEditing] = useState(false);
+  const [photoViewer, setPhotoViewer] = useState<{ visible: boolean; index: number }>({ visible: false, index: 0 });
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
@@ -224,8 +231,13 @@ export const ProfileScreen = () => {
             <Text style={styles.cardSubtitle}>{photos.length}/6</Text>
           </View>
           <View style={styles.photosGrid}>
-            {photos.map((photo) => (
-              <View key={photo.id} style={styles.photoItem}>
+            {photos.map((photo, idx) => (
+              <TouchableOpacity
+                key={photo.id}
+                style={styles.photoItem}
+                onPress={() => !editing && setPhotoViewer({ visible: true, index: idx })}
+                activeOpacity={editing ? 1 : 0.85}
+              >
                 <Image source={{ uri: photo.url }} style={styles.photoImage} />
                 {editing && (
                   <TouchableOpacity
@@ -240,7 +252,7 @@ export const ProfileScreen = () => {
                     <Text style={styles.photoMainText}>Principal</Text>
                   </View>
                 )}
-              </View>
+              </TouchableOpacity>
             ))}
             {photos.length < 6 && (
               <TouchableOpacity style={styles.photoAddBtn} onPress={handlePickPhoto}>
@@ -377,6 +389,39 @@ export const ProfileScreen = () => {
           </View>
         )}
       </ScrollView>
+
+      {/* Fullscreen Photo Viewer */}
+      <Modal
+        visible={photoViewer.visible}
+        transparent={false}
+        animationType="fade"
+        onRequestClose={() => setPhotoViewer((s) => ({ ...s, visible: false }))}
+      >
+        <View style={styles.photoViewerContainer}>
+          <TouchableOpacity
+            onPress={() => setPhotoViewer((s) => ({ ...s, visible: false }))}
+            style={[styles.photoViewerClose, { top: insets.top + 12 }]}
+            hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+            activeOpacity={0.6}
+          >
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+          <FlatList
+            data={photos}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            initialScrollIndex={photoViewer.index}
+            getItemLayout={(_, idx) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * idx, index: idx })}
+            keyExtractor={(p) => p.id}
+            renderItem={({ item }) => (
+              <View style={styles.photoFullWrap}>
+                <Image source={{ uri: item.url }} style={styles.photoFull} resizeMode="contain" />
+              </View>
+            )}
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -643,4 +688,25 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+
+  // Fullscreen viewer
+  photoViewerContainer: { flex: 1, backgroundColor: '#000' },
+  photoViewerClose: {
+    position: 'absolute',
+    right: 16,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 10,
+  },
+  photoFullWrap: {
+    width: SCREEN_WIDTH,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoFull: { width: SCREEN_WIDTH, height: '100%' },
 });

@@ -50,6 +50,7 @@ export const getDiscoveryFeed = async (
     interests: string | null;
     location: string | null;
     compatibility_score: string;
+    super_liked_by_them: boolean;
   }>(
     `WITH my_offer AS (
        SELECT skill_id FROM user_skills WHERE user_id = $1 AND skill_type = 'offer'
@@ -82,7 +83,11 @@ export const getDiscoveryFeed = async (
            AND us.skill_type = 'learn'
            AND us.skill_id IN (SELECT skill_id FROM my_offer)
          )) * 100.0 / (SELECT total FROM my_total)
-       )::int AS compatibility_score
+       )::int AS compatibility_score,
+       EXISTS (
+         SELECT 1 FROM user_likes ul2
+         WHERE ul2.sender_id = u.id AND ul2.receiver_id = $1 AND ul2.is_super = TRUE
+       ) AS super_liked_by_them
      FROM users u
      WHERE u.id <> $1
        AND NOT EXISTS (
@@ -99,7 +104,7 @@ export const getDiscoveryFeed = async (
             OR (m.user_b_id = $1 AND m.user_a_id = u.id)
        )
        ${locationClause}
-     ORDER BY compatibility_score DESC, u.created_at DESC
+     ORDER BY super_liked_by_them DESC, compatibility_score DESC, u.created_at DESC
      LIMIT $2`,
     params,
   );
@@ -123,6 +128,7 @@ export const getDiscoveryFeed = async (
       interests: row.interests ?? '',
       location: row.location ?? '',
       compatibilityScore: Number(row.compatibility_score),
+      superLikedByThem: row.super_liked_by_them,
       photos,
       ...skills,
     };

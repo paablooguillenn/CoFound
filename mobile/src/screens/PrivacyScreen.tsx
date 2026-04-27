@@ -1,20 +1,50 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Linking, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { UserPreferences, getPreferences, updatePreferences } from '../services/profile.service';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { AppStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Privacy'>;
 
+type PrivacyKey = keyof Pick<
+  UserPreferences,
+  'privacyProfileVisible' | 'privacyShowOnline' | 'privacyShowDistance' | 'privacyReadReceipts'
+>;
+
+const DEFAULTS: Required<Pick<UserPreferences, PrivacyKey>> = {
+  privacyProfileVisible: true,
+  privacyShowOnline: true,
+  privacyShowDistance: true,
+  privacyReadReceipts: true,
+};
+
 export const PrivacyScreen = ({ navigation }: Props) => {
-  const [profileVisible, setProfileVisible] = useState(true);
-  const [showOnline, setShowOnline] = useState(true);
-  const [showDistance, setShowDistance] = useState(true);
-  const [readReceipts, setReadReceipts] = useState(true);
+  const [prefs, setPrefs] = useState(DEFAULTS);
+  const [loading, setLoading] = useState(true);
+  const [twoFA, setTwoFA] = useState(false);
+
+  useEffect(() => {
+    getPreferences()
+      .then(({ preferences, twoFactorEnabled }) => {
+        setPrefs((prev) => ({ ...prev, ...preferences }));
+        setTwoFA(twoFactorEnabled);
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggle = (key: PrivacyKey) => {
+    const next = !prefs[key];
+    setPrefs((p) => ({ ...p, [key]: next }));
+    updatePreferences({ [key]: next }).catch(() => {
+      setPrefs((p) => ({ ...p, [key]: !next }));
+    });
+  };
 
   const switchProps = (value: boolean, onChange: () => void) => ({
     value,
@@ -23,10 +53,18 @@ export const PrivacyScreen = ({ navigation }: Props) => {
     thumbColor: value ? colors.primary : colors.textMuted,
   });
 
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.center]}>
+        <ActivityIndicator color={colors.primary} />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Privacidad y seguridad</Text>
@@ -34,38 +72,35 @@ export const PrivacyScreen = ({ navigation }: Props) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Info */}
         <View style={styles.infoBanner}>
           <Ionicons name="shield-checkmark" size={20} color={colors.info} />
           <View style={styles.infoContent}>
             <Text style={styles.infoTitle}>Tus datos están protegidos</Text>
             <Text style={styles.infoText}>
               Cumplimos con el RGPD y nunca compartimos tu información con terceros sin tu
-              consentimiento
+              consentimiento.
             </Text>
           </View>
         </View>
 
-        {/* Visibility */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Visibilidad del perfil</Text>
           </View>
-          <View style={styles.row}>
+          <View style={[styles.row, { borderBottomWidth: 0 }]}>
             <Ionicons
-              name={profileVisible ? 'eye' : 'eye-off'}
+              name={prefs.privacyProfileVisible ? 'eye' : 'eye-off'}
               size={20}
-              color={profileVisible ? colors.primary : colors.textMuted}
+              color={prefs.privacyProfileVisible ? colors.primary : colors.textMuted}
             />
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Perfil visible</Text>
               <Text style={styles.rowDesc}>Aparece en búsquedas de otros usuarios</Text>
             </View>
-            <Switch {...switchProps(profileVisible, () => setProfileVisible(!profileVisible))} />
+            <Switch {...switchProps(prefs.privacyProfileVisible, () => toggle('privacyProfileVisible'))} />
           </View>
         </View>
 
-        {/* Online / Distance */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Actividad</Text>
@@ -76,54 +111,37 @@ export const PrivacyScreen = ({ navigation }: Props) => {
               <Text style={styles.rowTitle}>Estado en línea</Text>
               <Text style={styles.rowDesc}>Muestra cuando estás activo</Text>
             </View>
-            <Switch {...switchProps(showOnline, () => setShowOnline(!showOnline))} />
+            <Switch {...switchProps(prefs.privacyShowOnline, () => toggle('privacyShowOnline'))} />
           </View>
-          <View style={styles.row}>
+          <View style={[styles.row, { borderBottomWidth: 0 }]}>
             <Ionicons name="location" size={20} color="#C9A84C" />
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Mostrar distancia</Text>
               <Text style={styles.rowDesc}>Ubicación aproximada en tu perfil</Text>
             </View>
-            <Switch {...switchProps(showDistance, () => setShowDistance(!showDistance))} />
+            <Switch {...switchProps(prefs.privacyShowDistance, () => toggle('privacyShowDistance'))} />
           </View>
         </View>
 
-        {/* Messaging */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Mensajería</Text>
           </View>
-          <View style={styles.row}>
+          <View style={[styles.row, { borderBottomWidth: 0 }]}>
             <Ionicons name="checkmark-done" size={20} color={colors.info} />
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Confirmaciones de lectura</Text>
               <Text style={styles.rowDesc}>Muestra cuando lees los mensajes</Text>
             </View>
-            <Switch {...switchProps(readReceipts, () => setReadReceipts(!readReceipts))} />
+            <Switch {...switchProps(prefs.privacyReadReceipts, () => toggle('privacyReadReceipts'))} />
           </View>
         </View>
 
-        {/* Blocked */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Usuarios bloqueados</Text>
-          </View>
-          <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]}>
-            <Ionicons name="ban" size={20} color={colors.textMuted} />
-            <View style={styles.rowContent}>
-              <Text style={styles.rowTitle}>Gestionar usuarios bloqueados</Text>
-              <Text style={styles.rowDesc}>0 usuarios bloqueados</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Data */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Datos y privacidad</Text>
           </View>
-          <TouchableOpacity style={styles.row}>
+          <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('DataExport')} activeOpacity={0.7}>
             <Ionicons name="download-outline" size={20} color={colors.textSecondary} />
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Descargar mis datos</Text>
@@ -131,23 +149,30 @@ export const PrivacyScreen = ({ navigation }: Props) => {
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.row}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => Linking.openURL('https://co-found-backend.vercel.app/privacy.html').catch(() => {})}
+            activeOpacity={0.7}
+          >
             <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Política de privacidad</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            <Ionicons name="open-outline" size={18} color={colors.textMuted} />
           </TouchableOpacity>
-          <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]}>
+          <TouchableOpacity
+            style={[styles.row, { borderBottomWidth: 0 }]}
+            onPress={() => Linking.openURL('https://co-found-backend.vercel.app/terms.html').catch(() => {})}
+            activeOpacity={0.7}
+          >
             <Ionicons name="document-text-outline" size={20} color={colors.textSecondary} />
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Términos y condiciones</Text>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            <Ionicons name="open-outline" size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
-        {/* 2FA */}
         <View style={styles.section}>
           <View style={[styles.sectionHeader, styles.securityHeader]}>
             <Ionicons name="lock-closed" size={18} color={colors.success} />
@@ -158,10 +183,16 @@ export const PrivacyScreen = ({ navigation }: Props) => {
               </Text>
             </View>
           </View>
-          <TouchableOpacity style={[styles.row, { borderBottomWidth: 0 }]}>
+          <TouchableOpacity
+            style={[styles.row, { borderBottomWidth: 0 }]}
+            onPress={() => navigation.navigate('Setup2FA')}
+            activeOpacity={0.7}
+          >
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Configurar 2FA</Text>
-              <Text style={styles.rowDesc}>No configurado</Text>
+              <Text style={[styles.rowDesc, twoFA && { color: colors.success }]}>
+                {twoFA ? 'Activado' : 'No configurado'}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>
@@ -173,6 +204,7 @@ export const PrivacyScreen = ({ navigation }: Props) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  center: { alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',

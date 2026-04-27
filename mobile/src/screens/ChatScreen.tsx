@@ -3,7 +3,9 @@ import {
   ActivityIndicator,
   Alert,
   Animated,
+  Dimensions,
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -16,7 +18,7 @@ import {
 } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '../components/Avatar';
 import { SkillBadge } from '../components/SkillBadge';
@@ -27,6 +29,8 @@ import { useAuth } from '../context/AuthContext';
 import { getMessages, sendMessage, getMatchProfile, unmatchUser, blockUser, reportUser, markMessagesRead } from '../services/api';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Chat'>;
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 interface Message {
   id: string;
@@ -46,6 +50,7 @@ interface MatchProfile {
   isPremium: boolean;
   offeredSkills: { name: string }[];
   learningSkills: { name: string }[];
+  photos?: { id: string; url: string; sortOrder: number }[];
 }
 
 // ─── Typing Indicator Component ─────────────────────────────────────────────
@@ -167,6 +172,7 @@ const AnimatedMessage = ({
 export const ChatScreen = ({ navigation, route }: Props) => {
   const { matchName, matchId, matchAvatar } = route.params;
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
@@ -175,6 +181,7 @@ export const ChatScreen = ({ navigation, route }: Props) => {
   const [showMenu, setShowMenu] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState<MatchProfile | null>(null);
+  const [photoViewer, setPhotoViewer] = useState<{ visible: boolean; index: number }>({ visible: false, index: 0 });
   const listRef = useRef<FlatList>(null);
 
   const nameParts = matchName.split(' ');
@@ -522,13 +529,18 @@ export const ChatScreen = ({ navigation, route }: Props) => {
 
       {/* Profile Modal */}
       <Modal visible={showProfile} animationType="slide" onRequestClose={() => setShowProfile(false)}>
-        <SafeAreaView style={styles.profileModal}>
+        <View style={[styles.profileModal, { paddingTop: insets.top }]}>
           <View style={styles.profileHeader}>
-            <TouchableOpacity onPress={() => setShowProfile(false)}>
+            <TouchableOpacity
+              onPress={() => setShowProfile(false)}
+              style={styles.profileCloseBtn}
+              hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+              activeOpacity={0.6}
+            >
               <Ionicons name="close" size={26} color={colors.text} />
             </TouchableOpacity>
             <Text style={styles.profileHeaderTitle}>Perfil</Text>
-            <View style={{ width: 26 }} />
+            <View style={styles.profileHeaderSpacer} />
           </View>
 
           {profile ? (
@@ -551,6 +563,21 @@ export const ChatScreen = ({ navigation, route }: Props) => {
                   </View>
                 ) : null}
               </View>
+
+              {profile.photos && profile.photos.length > 0 && (
+                <View style={styles.photoGrid}>
+                  {profile.photos.map((photo, idx) => (
+                    <TouchableOpacity
+                      key={photo.id}
+                      style={styles.photoThumb}
+                      onPress={() => setPhotoViewer({ visible: true, index: idx })}
+                      activeOpacity={0.85}
+                    >
+                      <Image source={{ uri: photo.url }} style={styles.photoThumbImage} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
 
               {profile.bio ? (
                 <View style={styles.profileCard}>
@@ -593,7 +620,40 @@ export const ChatScreen = ({ navigation, route }: Props) => {
               <ActivityIndicator size="large" color={colors.primary} />
             </View>
           )}
-        </SafeAreaView>
+
+          {/* Fullscreen Photo Viewer (nested so it renders above the profile modal on iOS) */}
+          <Modal
+            visible={photoViewer.visible}
+            transparent={false}
+            animationType="fade"
+            onRequestClose={() => setPhotoViewer((s) => ({ ...s, visible: false }))}
+          >
+            <View style={styles.photoViewerContainer}>
+              <TouchableOpacity
+                onPress={() => setPhotoViewer((s) => ({ ...s, visible: false }))}
+                style={[styles.photoViewerClose, { top: insets.top + 12 }]}
+                hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                activeOpacity={0.6}
+              >
+                <Ionicons name="close" size={28} color="#fff" />
+              </TouchableOpacity>
+              <FlatList
+                data={profile?.photos ?? []}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                initialScrollIndex={photoViewer.index}
+                getItemLayout={(_, idx) => ({ length: SCREEN_WIDTH, offset: SCREEN_WIDTH * idx, index: idx })}
+                keyExtractor={(p) => p.id}
+                renderItem={({ item }) => (
+                  <View style={styles.photoFullWrap}>
+                    <Image source={{ uri: item.url }} style={styles.photoFull} resizeMode="contain" />
+                  </View>
+                )}
+              />
+            </View>
+          </Modal>
+        </View>
       </Modal>
     </SafeAreaView>
   );
@@ -729,7 +789,9 @@ const styles = StyleSheet.create({
 
   // Profile modal
   profileModal: { flex: 1, backgroundColor: colors.background },
-  profileHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface },
+  profileHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.sm, paddingVertical: spacing.sm, borderBottomWidth: 1, borderBottomColor: colors.border, backgroundColor: colors.surface },
+  profileCloseBtn: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center', borderRadius: 22 },
+  profileHeaderSpacer: { width: 44, height: 44 },
   profileHeaderTitle: { fontSize: 18, fontWeight: '700', color: colors.text },
   profileContent: { padding: spacing.lg, gap: spacing.lg },
   profileAvatarSection: { alignItems: 'center', gap: spacing.sm },
@@ -739,5 +801,37 @@ const styles = StyleSheet.create({
   profileCard: { backgroundColor: colors.surface, borderRadius: 16, borderWidth: 1, borderColor: colors.border, padding: spacing.md, gap: spacing.sm },
   profileCardTitle: { fontSize: 14, fontWeight: '700', color: colors.textSecondary },
   profileCardText: { fontSize: 15, color: colors.text, lineHeight: 22 },
+
+  // Photo grid (3 cols)
+  photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  photoThumb: {
+    width: (SCREEN_WIDTH - spacing.lg * 2 - spacing.xs * 2) / 3,
+    aspectRatio: 1,
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: colors.surface,
+  },
+  photoThumbImage: { width: '100%', height: '100%' },
+
+  // Fullscreen viewer
+  photoViewerContainer: { flex: 1, backgroundColor: '#000' },
+  photoViewerClose: {
+    position: 'absolute',
+    right: 16,
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    zIndex: 10,
+  },
+  photoFullWrap: {
+    width: SCREEN_WIDTH,
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoFull: { width: SCREEN_WIDTH, height: '100%' },
   skillRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
 });

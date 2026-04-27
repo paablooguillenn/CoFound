@@ -21,7 +21,7 @@ import { Avatar } from '../components/Avatar';
 import { MatchNotification } from '../components/MatchNotification';
 import { useAuth } from '../context/AuthContext';
 import { getDiscoveryProfiles, getLocations } from '../services/discovery.service';
-import { likeProfile, passProfile } from '../services/matches.service';
+import { likeProfile, passProfile, rewindLastSwipe, superLikeProfile } from '../services/matches.service';
 import { DiscoveryUser } from '../types/models';
 import { AppStackParamList } from '../types/navigation';
 import { colors } from '../theme/colors';
@@ -46,17 +46,21 @@ export const ExploreScreen = () => {
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
   const [showLimitModal, setShowLimitModal] = useState(false);
+  const [showSuperPremiumModal, setShowSuperPremiumModal] = useState(false);
+  const [showSuperLimitModal, setShowSuperLimitModal] = useState(false);
 
   const [matchModal, setMatchModal] = useState<{
     visible: boolean;
     name: string;
     matchId: string;
     avatarUrl: string | null;
+    isSuper: boolean;
   }>({
     visible: false,
     name: '',
     matchId: '',
     avatarUrl: null,
+    isSuper: false,
   });
 
   // Location filter (premium only)
@@ -131,6 +135,7 @@ export const ExploreScreen = () => {
             name: `${profile.firstName} ${profile.lastName}`,
             matchId: result.matchId,
             avatarUrl: profile.avatarUrl ?? null,
+            isSuper: false,
           });
         }
       })
@@ -139,6 +144,65 @@ export const ExploreScreen = () => {
         if (status === 429) {
           setShowLimitModal(true);
         }
+      })
+      .finally(() => setLiking(false));
+  };
+
+  const handleRewind = async () => {
+    if (!isPremium) {
+      setShowSuperPremiumModal(true);
+      return;
+    }
+    try {
+      await rewindLastSwipe();
+      await loadProfiles();
+    } catch (err: any) {
+      const status = err?.response?.status;
+      if (status === 404) {
+        Alert.alert('Sin swipes', 'No hay nada que deshacer.');
+      } else if (status === 403) {
+        setShowSuperPremiumModal(true);
+      } else {
+        Alert.alert('Error', 'No se pudo deshacer el último swipe.');
+      }
+    }
+  };
+
+  const handleSuperLike = () => {
+    const profile = profilesRef.current[currentIndexRef.current];
+    if (!profile || liking) return;
+
+    if (!isPremium) {
+      setShowSuperPremiumModal(true);
+      return;
+    }
+
+    // Advance the card immediately with a rightward swipe animation
+    Animated.timing(position, {
+      toValue: { x: SCREEN_WIDTH * 1.5, y: -200 },
+      duration: SWIPE_OUT_DURATION,
+      useNativeDriver: true,
+    }).start(() => {
+      advanceToNext();
+    });
+
+    setLiking(true);
+    superLikeProfile(profile.id)
+      .then((result) => {
+        if (result.isMatch && result.matchId) {
+          setMatchModal({
+            visible: true,
+            name: `${profile.firstName} ${profile.lastName}`,
+            matchId: result.matchId,
+            avatarUrl: profile.avatarUrl ?? null,
+            isSuper: true,
+          });
+        }
+      })
+      .catch((err: any) => {
+        const status = err?.response?.status;
+        if (status === 403) setShowSuperPremiumModal(true);
+        else if (status === 429) setShowSuperLimitModal(true);
       })
       .finally(() => setLiking(false));
   };
@@ -405,6 +469,15 @@ export const ExploreScreen = () => {
       {/* Action buttons */}
       <View style={styles.actions}>
         <TouchableOpacity
+          style={styles.btnRewind}
+          onPress={handleRewind}
+          disabled={liking}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="refresh" size={22} color="#C9A84C" />
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={styles.btnPass}
           onPress={() => doSwipeRef.current('left')}
           disabled={liking}
@@ -415,7 +488,8 @@ export const ExploreScreen = () => {
 
         <TouchableOpacity
           style={styles.btnSuperLike}
-          onPress={() => {}}
+          onPress={handleSuperLike}
+          disabled={liking}
           activeOpacity={0.7}
         >
           <Ionicons name="star" size={24} color="#60A5FA" />
@@ -460,16 +534,58 @@ export const ExploreScreen = () => {
         visible={matchModal.visible}
         matchName={matchModal.name}
         matchAvatar={matchModal.avatarUrl}
+        isSuper={matchModal.isSuper}
         onChat={() => {
           setMatchModal((m) => ({ ...m, visible: false }));
-          advanceToNext();
           navigation.navigate('Chat', { matchId: matchModal.matchId, matchName: matchModal.name, matchAvatar: matchModal.avatarUrl });
         }}
         onClose={() => {
           setMatchModal((m) => ({ ...m, visible: false }));
-          advanceToNext();
         }}
       />
+
+      {/* Super-like Premium gate */}
+      <Modal visible={showSuperPremiumModal} transparent animationType="fade" onRequestClose={() => setShowSuperPremiumModal(false)}>
+        <View style={styles.limitOverlay}>
+          <View style={styles.limitCard}>
+            <View style={[styles.limitIconCircle, { backgroundColor: 'rgba(96,165,250,0.16)' }]}>
+              <Ionicons name="star" size={36} color="#60A5FA" />
+            </View>
+            <Text style={styles.limitTitle}>Super-likes son Premium</Text>
+            <Text style={styles.limitText}>
+              Destaca tu interés entre la multitud. Los super-likes te ponen al frente del perfil que elijas.
+            </Text>
+            <TouchableOpacity
+              style={styles.limitPremiumBtn}
+              onPress={() => { setShowSuperPremiumModal(false); navigation.navigate('Pricing'); }}
+            >
+              <Ionicons name="diamond" size={18} color={colors.background} />
+              <Text style={styles.limitPremiumBtnText}>Ver planes Premium</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setShowSuperPremiumModal(false)}>
+              <Text style={styles.limitCloseText}>Ahora no</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Super-like daily limit */}
+      <Modal visible={showSuperLimitModal} transparent animationType="fade" onRequestClose={() => setShowSuperLimitModal(false)}>
+        <View style={styles.limitOverlay}>
+          <View style={styles.limitCard}>
+            <View style={[styles.limitIconCircle, { backgroundColor: 'rgba(96,165,250,0.16)' }]}>
+              <Ionicons name="star" size={36} color="#60A5FA" />
+            </View>
+            <Text style={styles.limitTitle}>Sin super-likes por hoy</Text>
+            <Text style={styles.limitText}>
+              Ya has usado tus 5 super-likes diarios. Vuelve mañana para seguir destacando entre los perfiles que más te interesan.
+            </Text>
+            <TouchableOpacity onPress={() => setShowSuperLimitModal(false)} style={styles.limitPremiumBtn}>
+              <Text style={styles.limitPremiumBtnText}>Entendido</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -534,6 +650,14 @@ const CardContent = ({ profile }: { profile: DiscoveryUser }) => {
         </View>
       )}
 
+      {/* Super-like received banner */}
+      {profile.superLikedByThem && (
+        <View style={styles.superLikeBanner} pointerEvents="none">
+          <Ionicons name="star" size={14} color="#60A5FA" />
+          <Text style={styles.superLikeBannerText}>Te ha dado super-like</Text>
+        </View>
+      )}
+
       {/* Bottom gradient with profile info */}
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.92)']}
@@ -564,9 +688,9 @@ const CardContent = ({ profile }: { profile: DiscoveryUser }) => {
           <Text style={styles.bioPreview} numberOfLines={expanded ? 10 : 2}>
             {profile.bio || 'Perfil en construcción.'}
           </Text>
-          {!expanded && (profile.bio?.length ?? 0) > 80 && (
-            <Text style={styles.readMore}>Leer más</Text>
-          )}
+          <Text style={styles.readMore}>
+            {expanded ? 'Leer menos' : 'Leer más'}
+          </Text>
         </TouchableOpacity>
 
         {/* Skills */}
@@ -742,6 +866,28 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
 
+  // Super-like received banner
+  superLikeBanner: {
+    position: 'absolute',
+    top: 70,
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(96,165,250,0.22)',
+    borderWidth: 1,
+    borderColor: 'rgba(96,165,250,0.5)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+    zIndex: 12,
+  },
+  superLikeBannerText: {
+    color: '#93C5FD',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+
   // Stamp overlays
   stamp: {
     position: 'absolute',
@@ -781,7 +927,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg + 80,
+    paddingBottom: spacing.md,
     paddingTop: 160,
   },
   compatBadge: {
@@ -828,10 +974,11 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   readMore: {
-    color: colors.primary,
-    fontSize: 13,
-    fontWeight: '600',
-    marginTop: 4,
+    color: colors.pink,
+    fontSize: 14,
+    fontWeight: '800',
+    marginTop: 6,
+    letterSpacing: 0.3,
   },
   expandedSkills: {
     gap: spacing.sm,
@@ -913,6 +1060,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingBottom: spacing.sm,
     backgroundColor: colors.background,
+  },
+  btnRewind: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(201, 168, 76, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(201, 168, 76, 0.3)',
   },
   btnPass: {
     width: 64,

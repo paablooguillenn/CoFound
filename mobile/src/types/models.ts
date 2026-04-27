@@ -25,6 +25,7 @@ export type Photo = {
 
 export type DiscoveryUser = UserProfile & {
   compatibilityScore: number;
+  superLikedByThem?: boolean;
   photos?: Photo[];
 };
 

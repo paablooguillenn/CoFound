@@ -17,6 +17,9 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url TEXT,
   interests TEXT,
   location VARCHAR(120),
+  preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
+  two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  deactivated_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
@@ -41,6 +44,7 @@ CREATE TABLE IF NOT EXISTS user_likes (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   sender_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   receiver_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  is_super BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE (sender_id, receiver_id),
   CHECK (sender_id <> receiver_id)
@@ -54,6 +58,16 @@ CREATE TABLE IF NOT EXISTS user_passes (
   UNIQUE (sender_id, receiver_id),
   CHECK (sender_id <> receiver_id)
 );
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_prt_user ON password_reset_tokens(user_id, used_at);
 
 CREATE TABLE IF NOT EXISTS matches (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -86,6 +100,7 @@ CREATE INDEX IF NOT EXISTS idx_user_photos_user ON user_photos(user_id, sort_ord
 CREATE INDEX IF NOT EXISTS idx_user_skills_user ON user_skills(user_id, skill_type);
 CREATE INDEX IF NOT EXISTS idx_user_likes_sender ON user_likes(sender_id);
 CREATE INDEX IF NOT EXISTS idx_user_likes_receiver ON user_likes(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_user_likes_super ON user_likes(receiver_id, is_super) WHERE is_super = TRUE;
 CREATE INDEX IF NOT EXISTS idx_user_passes_sender_date ON user_passes(sender_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_matches_users ON matches(user_a_id, user_b_id);
 CREATE INDEX IF NOT EXISTS idx_messages_match ON messages(match_id, created_at);

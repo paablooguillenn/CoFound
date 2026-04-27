@@ -2,6 +2,8 @@ export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
   Register: undefined;
+  ForgotPassword: undefined;
+  ResetPassword: { email: string };
 };
 
 export type AppTabParamList = {
@@ -19,4 +21,10 @@ export type AppStackParamList = {
   Pricing: undefined;
   Checkout: { plan: 'monthly' | 'yearly'; price: number };
   CheckoutSuccess: { plan: 'monthly' | 'yearly' };
+  ChangeEmail: undefined;
+  ChangePassword: undefined;
+  Language: undefined;
+  DataExport: undefined;
+  Setup2FA: undefined;
+  LikesReceived: undefined;
 };

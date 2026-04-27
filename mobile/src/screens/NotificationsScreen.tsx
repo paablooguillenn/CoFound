@@ -1,80 +1,72 @@
-import React, { useState } from 'react';
-import { ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { UserPreferences, getPreferences, updatePreferences } from '../services/profile.service';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { AppStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Notifications'>;
 
-interface NotifSetting {
-  id: string;
-  title: string;
-  description: string;
-  icon: keyof typeof Ionicons.glyphMap;
-  iconColor: string;
-  enabled: boolean;
-}
+type ToggleId = keyof Pick<
+  UserPreferences,
+  'notifMatches' | 'notifMessages' | 'notifRecommendations' | 'notifEmail' | 'notifMarketing' | 'doNotDisturb' | 'vibration'
+>;
 
-const INITIAL_SETTINGS: NotifSetting[] = [
-  {
-    id: 'matches',
-    title: 'Nuevos matches',
-    description: 'Recibe una notificación cuando alguien te da like',
-    icon: 'heart',
-    iconColor: '#F87171',
-    enabled: true,
-  },
-  {
-    id: 'messages',
-    title: 'Mensajes',
-    description: 'Notificaciones de nuevos mensajes en el chat',
-    icon: 'chatbubble',
-    iconColor: colors.info,
-    enabled: true,
-  },
-  {
-    id: 'recommendations',
-    title: 'Recomendaciones',
-    description: 'Perfiles altamente compatibles contigo',
-    icon: 'sparkles',
-    iconColor: colors.primary,
-    enabled: true,
-  },
-  {
-    id: 'email',
-    title: 'Notificaciones por email',
-    description: 'Resumen semanal de actividad',
-    icon: 'mail',
-    iconColor: colors.success,
-    enabled: false,
-  },
-  {
-    id: 'marketing',
-    title: 'Promociones y ofertas',
-    description: 'Descuentos en suscripciones premium',
-    icon: 'notifications',
-    iconColor: '#C9A84C',
-    enabled: false,
-  },
-];
+const DEFAULT_NOTIF: Required<Pick<UserPreferences, ToggleId>> = {
+  notifMatches: true,
+  notifMessages: true,
+  notifRecommendations: true,
+  notifEmail: false,
+  notifMarketing: false,
+  doNotDisturb: false,
+  vibration: true,
+};
 
 export const NotificationsScreen = ({ navigation }: Props) => {
-  const [settings, setSettings] = useState<NotifSetting[]>(INITIAL_SETTINGS);
-  const [doNotDisturb, setDoNotDisturb] = useState(false);
+  const [prefs, setPrefs] = useState(DEFAULT_NOTIF);
+  const [loading, setLoading] = useState(true);
 
-  const toggle = (id: string) =>
-    setSettings((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, enabled: !s.enabled } : s)),
+  useEffect(() => {
+    getPreferences()
+      .then(({ preferences }) => {
+        setPrefs((prev) => ({ ...prev, ...preferences }));
+      })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const toggle = (key: ToggleId) => {
+    const next = !prefs[key];
+    setPrefs((p) => ({ ...p, [key]: next }));
+    updatePreferences({ [key]: next }).catch(() => {
+      setPrefs((p) => ({ ...p, [key]: !next }));
+    });
+  };
+
+  if (loading) {
+    return (
+      <SafeAreaView style={[styles.container, styles.center]}>
+        <ActivityIndicator color={colors.primary} />
+      </SafeAreaView>
     );
+  }
+
+  const pushItems: { id: ToggleId; title: string; description: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
+    { id: 'notifMatches', title: 'Nuevos matches', description: 'Cuando alguien hace match contigo', icon: 'heart', color: '#F87171' },
+    { id: 'notifMessages', title: 'Mensajes', description: 'Nuevos mensajes en tus chats', icon: 'chatbubble', color: colors.info },
+    { id: 'notifRecommendations', title: 'Recomendaciones', description: 'Perfiles altamente compatibles', icon: 'sparkles', color: colors.primary },
+    { id: 'notifEmail', title: 'Email semanal', description: 'Resumen de actividad por email', icon: 'mail', color: colors.success },
+    { id: 'notifMarketing', title: 'Promociones', description: 'Descuentos en suscripciones premium', icon: 'notifications', color: '#C9A84C' },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notificaciones</Text>
@@ -82,95 +74,61 @@ export const NotificationsScreen = ({ navigation }: Props) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Info */}
         <View style={styles.infoBanner}>
           <Text style={styles.infoText}>
-            Gestiona cómo y cuándo quieres recibir notificaciones de CoFound
+            Tus preferencias se guardan automáticamente y se sincronizan en todos tus dispositivos.
           </Text>
         </View>
 
-        {/* Push section */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>Notificaciones push</Text>
-            <Text style={styles.sectionSubtitle}>
-              Activa o desactiva notificaciones individuales
-            </Text>
           </View>
-
-          {settings.map((s) => (
-            <View key={s.id} style={styles.row}>
-              <Ionicons name={s.icon} size={20} color={s.iconColor} />
+          {pushItems.map((item, idx) => (
+            <View key={item.id} style={[styles.row, idx === pushItems.length - 1 && { borderBottomWidth: 0 }]}>
+              <Ionicons name={item.icon} size={20} color={item.color} />
               <View style={styles.rowContent}>
-                <Text style={styles.rowTitle}>{s.title}</Text>
-                <Text style={styles.rowDesc}>{s.description}</Text>
+                <Text style={styles.rowTitle}>{item.title}</Text>
+                <Text style={styles.rowDesc}>{item.description}</Text>
               </View>
               <Switch
-                value={s.enabled}
-                onValueChange={() => toggle(s.id)}
+                value={!!prefs[item.id]}
+                onValueChange={() => toggle(item.id)}
                 trackColor={{ false: colors.border, true: colors.primaryDark }}
-                thumbColor={s.enabled ? colors.primary : colors.textMuted}
+                thumbColor={prefs[item.id] ? colors.primary : colors.textMuted}
               />
             </View>
           ))}
         </View>
 
-        {/* Do not disturb */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Horario de notificaciones</Text>
+            <Text style={styles.sectionTitle}>Horario y comportamiento</Text>
           </View>
-
           <View style={styles.row}>
             <Ionicons name="moon" size={20} color={colors.primary} />
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Modo No molestar</Text>
-              <Text style={styles.rowDesc}>Silencia notificaciones por la noche</Text>
+              <Text style={styles.rowDesc}>Silencia notificaciones de 22:00 a 08:00</Text>
             </View>
             <Switch
-              value={doNotDisturb}
-              onValueChange={setDoNotDisturb}
+              value={!!prefs.doNotDisturb}
+              onValueChange={() => toggle('doNotDisturb')}
               trackColor={{ false: colors.border, true: colors.primaryDark }}
-              thumbColor={doNotDisturb ? colors.primary : colors.textMuted}
+              thumbColor={prefs.doNotDisturb ? colors.primary : colors.textMuted}
             />
           </View>
-
-          <View style={styles.timeRow}>
-            <View style={styles.timeBox}>
-              <Text style={styles.timeLabel}>Desde</Text>
-              <Text style={styles.timeValue}>22:00</Text>
-            </View>
-            <View style={styles.timeBox}>
-              <Text style={styles.timeLabel}>Hasta</Text>
-              <Text style={styles.timeValue}>08:00</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Sound */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Sonido y vibración</Text>
-          </View>
-
-          <View style={styles.row}>
-            <Ionicons name="volume-medium" size={20} color={colors.textSecondary} />
-            <View style={styles.rowContent}>
-              <Text style={styles.rowTitle}>Sonido</Text>
-              <Text style={styles.rowDesc}>Predeterminado</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </View>
-
-          <View style={styles.row}>
+          <View style={[styles.row, { borderBottomWidth: 0 }]}>
             <Ionicons name="phone-portrait" size={20} color={colors.textSecondary} />
             <View style={styles.rowContent}>
               <Text style={styles.rowTitle}>Vibración</Text>
+              <Text style={styles.rowDesc}>Vibrar al recibir notificaciones</Text>
             </View>
             <Switch
-              value={true}
+              value={!!prefs.vibration}
+              onValueChange={() => toggle('vibration')}
               trackColor={{ false: colors.border, true: colors.primaryDark }}
-              thumbColor={colors.primary}
+              thumbColor={prefs.vibration ? colors.primary : colors.textMuted}
             />
           </View>
         </View>
@@ -181,6 +139,7 @@ export const NotificationsScreen = ({ navigation }: Props) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
+  center: { alignItems: 'center', justifyContent: 'center' },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -214,7 +173,6 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   sectionTitle: { fontSize: 15, fontWeight: '700', color: colors.text },
-  sectionSubtitle: { fontSize: 12, color: colors.textMuted, marginTop: 2 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -226,17 +184,4 @@ const styles = StyleSheet.create({
   rowContent: { flex: 1 },
   rowTitle: { fontSize: 14, fontWeight: '600', color: colors.text },
   rowDesc: { fontSize: 12, color: colors.textMuted, marginTop: 1 },
-  timeRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    padding: spacing.md,
-  },
-  timeBox: {
-    flex: 1,
-    backgroundColor: colors.background,
-    borderRadius: 10,
-    padding: spacing.sm,
-  },
-  timeLabel: { fontSize: 12, color: colors.textMuted, marginBottom: 4 },
-  timeValue: { fontSize: 16, fontWeight: '700', color: colors.text },
 });

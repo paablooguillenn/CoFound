@@ -9,6 +9,8 @@ const envSchema = z.object({
   JWT_SECRET: z.string().min(12),
   JWT_EXPIRES_IN: z.string().default('7d'),
   CLIENT_URL: z.string().default('http://localhost:8081'),
+  RESEND_API_KEY: z.string().optional(),
+  EMAIL_FROM: z.string().default('CoFound <onboarding@resend.dev>'),
 });
 
 export const env = envSchema.parse(process.env);

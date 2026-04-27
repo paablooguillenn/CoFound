@@ -98,7 +98,7 @@ export const LoginScreen = ({ navigation }: Props) => {
             icon={<Ionicons name="lock-closed-outline" size={18} color={colors.textMuted} />}
             error={errors.password}
           />
-          <TouchableOpacity style={styles.forgot}>
+          <TouchableOpacity style={styles.forgot} onPress={() => navigation.navigate('ForgotPassword')}>
             <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
           <PrimaryButton label="Iniciar sesión" onPress={handleLogin} loading={loading} />

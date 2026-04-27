@@ -20,3 +20,17 @@ export const registerRequest = async (payload: {
   const response = await api.post<AuthResponse>('/auth/register', payload);
   return response.data;
 };
+
+export const forgotPasswordRequest = async (email: string) => {
+  const response = await api.post<{ success: boolean }>('/auth/forgot-password', { email });
+  return response.data;
+};
+
+export const resetPasswordRequest = async (payload: {
+  email: string;
+  code: string;
+  newPassword: string;
+}) => {
+  const response = await api.post<{ success: boolean }>('/auth/reset-password', payload);
+  return response.data;
+};
