@@ -1,13 +1,17 @@
 import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 
-import { getMatches, likeUser, passUser, unmatchUser, blockUser, getMatchProfile, reportUser, getUnreadTotal } from '../services/match.service';
+import { getMatches, likeUser, passUser, superLikeUser, unmatchUser, blockUser, getMatchProfile, reportUser, getUnreadTotal, rewindLastSwipe, getLikesReceived } from '../services/match.service';
 
 const likeSchema = z.object({
   targetUserId: z.string().uuid(),
 });
 
 const passSchema = z.object({
+  targetUserId: z.string().uuid(),
+});
+
+const superLikeSchema = z.object({
   targetUserId: z.string().uuid(),
 });
 
@@ -36,6 +40,34 @@ export const passUserController = async (request: Request, response: Response, n
     const payload = passSchema.parse(request.body);
     const result = await passUser(request.user!.id, payload.targetUserId);
     response.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const superLikeUserController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const payload = superLikeSchema.parse(request.body);
+    const result = await superLikeUser(request.user!.id, payload.targetUserId);
+    response.status(201).json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const rewindController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const result = await rewindLastSwipe(request.user!.id);
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getLikesReceivedController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const likes = await getLikesReceived(request.user!.id);
+    response.json({ likes });
   } catch (error) {
     next(error);
   }

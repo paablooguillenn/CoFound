@@ -153,6 +153,14 @@ export const MatchesScreen = () => {
             {matches.length} {matches.length === 1 ? 'conexión' : 'conexiones'}
           </Text>
         </View>
+        <TouchableOpacity
+          style={styles.likesReceivedBtn}
+          onPress={() => navigation.navigate('LikesReceived')}
+          activeOpacity={0.7}
+        >
+          <Ionicons name="heart" size={16} color={colors.pink} />
+          <Text style={styles.likesReceivedText}>Te han dado like</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -215,12 +223,27 @@ export const MatchesScreen = () => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
   },
+  likesReceivedBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.pinkLight,
+    borderWidth: 1,
+    borderColor: 'rgba(233,30,99,0.3)',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+  },
+  likesReceivedText: { color: colors.pink, fontWeight: '700', fontSize: 13 },
   headerTitle: { fontSize: 22, fontWeight: '800', color: colors.text },
   headerSubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   scroll: { flex: 1 },

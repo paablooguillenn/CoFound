@@ -11,6 +11,12 @@ import { NotificationsScreen } from '../screens/NotificationsScreen';
 import { PricingScreen } from '../screens/PricingScreen';
 import { CheckoutScreen } from '../screens/CheckoutScreen';
 import { CheckoutSuccessScreen } from '../screens/CheckoutSuccessScreen';
+import { ChangeEmailScreen } from '../screens/ChangeEmailScreen';
+import { ChangePasswordScreen } from '../screens/ChangePasswordScreen';
+import { LanguageScreen } from '../screens/LanguageScreen';
+import { DataExportScreen } from '../screens/DataExportScreen';
+import { Setup2FAScreen } from '../screens/Setup2FAScreen';
+import { LikesReceivedScreen } from '../screens/LikesReceivedScreen';
 import { AppTabsNavigator } from './AppTabsNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import { AppStackParamList } from '../types/navigation';
@@ -27,6 +33,12 @@ const AppStackNavigator = () => (
     <Stack.Screen name="Pricing" component={PricingScreen} />
     <Stack.Screen name="Checkout" component={CheckoutScreen} />
     <Stack.Screen name="CheckoutSuccess" component={CheckoutSuccessScreen} options={{ gestureEnabled: false }} />
+    <Stack.Screen name="ChangeEmail" component={ChangeEmailScreen} />
+    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+    <Stack.Screen name="Language" component={LanguageScreen} />
+    <Stack.Screen name="DataExport" component={DataExportScreen} />
+    <Stack.Screen name="Setup2FA" component={Setup2FAScreen} />
+    <Stack.Screen name="LikesReceived" component={LikesReceivedScreen} />
   </Stack.Navigator>
 );
 

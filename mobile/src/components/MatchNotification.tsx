@@ -10,11 +10,14 @@ type Props = {
   visible: boolean;
   matchName: string;
   matchAvatar?: string | null;
+  isSuper?: boolean;
   onChat: () => void;
   onClose: () => void;
 };
 
-export const MatchNotification = ({ visible, matchName, matchAvatar, onChat, onClose }: Props) => {
+export const MatchNotification = ({ visible, matchName, matchAvatar, isSuper = false, onChat, onClose }: Props) => {
+  const accent = isSuper ? '#60A5FA' : colors.pink;
+  const accentLight = isSuper ? 'rgba(96,165,250,0.16)' : colors.pinkLight;
   const heartScale = useRef(new Animated.Value(0)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const contentSlide = useRef(new Animated.Value(30)).current;
@@ -70,16 +73,18 @@ export const MatchNotification = ({ visible, matchName, matchAvatar, onChat, onC
   return (
     <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose}>
       <View style={styles.container}>
-        {/* Heart icon */}
+        {/* Heart / Star icon */}
         <Animated.View
           style={[
             styles.heartCircle,
             {
+              backgroundColor: accent,
+              shadowColor: accent,
               transform: [{ scale: Animated.multiply(heartScale, pulseAnim) }],
             },
           ]}
         >
-          <Ionicons name="heart" size={44} color={colors.white} />
+          <Ionicons name={isSuper ? 'star' : 'heart'} size={44} color={colors.white} />
         </Animated.View>
 
         {/* Content */}
@@ -92,20 +97,22 @@ export const MatchNotification = ({ visible, matchName, matchAvatar, onChat, onC
             },
           ]}
         >
-          <Text style={styles.title}>¡Es un Match!</Text>
+          <Text style={styles.title}>{isSuper ? '¡Super Match!' : '¡Es un Match!'}</Text>
           <Text style={styles.subtitle}>
-            A {firstName} también le interesa colaborar contigo
+            {isSuper
+              ? `Le diste un super-like a ${firstName} y fue recíproco`
+              : `A ${firstName} también le interesa colaborar contigo`}
           </Text>
 
           {/* Avatars */}
           <View style={styles.avatarRow}>
-            <View style={styles.avatarWrapper}>
+            <View style={[styles.avatarWrapper, { borderColor: accent }]}>
               <Avatar firstName="Tú" lastName="" size={68} />
             </View>
-            <View style={styles.heartSmall}>
-              <Ionicons name="heart" size={18} color={colors.pink} />
+            <View style={[styles.heartSmall, { backgroundColor: accentLight }]}>
+              <Ionicons name={isSuper ? 'star' : 'heart'} size={18} color={accent} />
             </View>
-            <View style={styles.avatarWrapper}>
+            <View style={[styles.avatarWrapper, { borderColor: accent }]}>
               <Avatar
                 firstName={firstName}
                 lastName={lastName}
@@ -116,7 +123,11 @@ export const MatchNotification = ({ visible, matchName, matchAvatar, onChat, onC
           </View>
 
           {/* Actions */}
-          <TouchableOpacity style={styles.chatBtn} onPress={onChat} activeOpacity={0.8}>
+          <TouchableOpacity
+            style={[styles.chatBtn, { backgroundColor: accent }]}
+            onPress={onChat}
+            activeOpacity={0.8}
+          >
             <Ionicons name="chatbubble" size={20} color={colors.white} />
             <Text style={styles.chatBtnText}>Enviar mensaje</Text>
           </TouchableOpacity>
