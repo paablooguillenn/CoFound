@@ -39,6 +39,11 @@ export const deactivateAccountRequest = async () => {
   return response.data;
 };
 
+export const reactivateAccountRequest = async () => {
+  const response = await api.post<{ success: boolean }>('/profile/reactivate');
+  return response.data;
+};
+
 export type UserPreferences = {
   notifMatches?: boolean;
   notifMessages?: boolean;
