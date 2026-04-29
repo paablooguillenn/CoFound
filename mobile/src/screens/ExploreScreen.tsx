@@ -544,16 +544,16 @@ export const ExploreScreen = () => {
         }}
       />
 
-      {/* Super-like Premium gate */}
+      {/* Premium gate (super-like + rewind + cualquier futura feature premium) */}
       <Modal visible={showSuperPremiumModal} transparent animationType="fade" onRequestClose={() => setShowSuperPremiumModal(false)}>
         <View style={styles.limitOverlay}>
           <View style={styles.limitCard}>
-            <View style={[styles.limitIconCircle, { backgroundColor: 'rgba(96,165,250,0.16)' }]}>
-              <Ionicons name="star" size={36} color="#60A5FA" />
+            <View style={[styles.limitIconCircle, { backgroundColor: 'rgba(201,168,76,0.16)' }]}>
+              <Ionicons name="diamond" size={36} color={colors.premiumStart} />
             </View>
-            <Text style={styles.limitTitle}>Super-likes son Premium</Text>
+            <Text style={styles.limitTitle}>Función Premium</Text>
             <Text style={styles.limitText}>
-              Destaca tu interés entre la multitud. Los super-likes te ponen al frente del perfil que elijas.
+              Esto requiere CoFound Premium: super-likes, deshacer swipes, ver quién te ha dado like, filtros avanzados y más.
             </Text>
             <TouchableOpacity
               style={styles.limitPremiumBtn}

@@ -17,11 +17,30 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url TEXT,
   interests TEXT,
   location VARCHAR(120),
+  is_premium BOOLEAN NOT NULL DEFAULT FALSE,
+  premium_plan VARCHAR(20),
+  premium_since TIMESTAMP WITH TIME ZONE,
   preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
   two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
   deactivated_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS reports (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  reporter_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reported_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reason TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS blocked_users (
+  blocker_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  blocked_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  reason TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  PRIMARY KEY (blocker_id, blocked_id)
 );
 
 CREATE TABLE IF NOT EXISTS skills (
