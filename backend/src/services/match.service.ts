@@ -68,8 +68,8 @@ export const likeUser = async (currentUserId: string, targetUserId: string) => {
       const [userA, userB] = [currentUserId, targetUserId].sort();
 
       const matchResult = await client.query(
-        `INSERT INTO matches (user_a_id, user_b_id)
-         VALUES ($1, $2)
+        `INSERT INTO matches (user_a_id, user_b_id, expires_at)
+         VALUES ($1, $2, NOW() + INTERVAL '7 days')
          ON CONFLICT (user_a_id, user_b_id) DO NOTHING
          RETURNING id`,
         [userA, userB],
@@ -153,8 +153,8 @@ export const superLikeUser = async (currentUserId: string, targetUserId: string)
       const [userA, userB] = [currentUserId, targetUserId].sort();
 
       const matchResult = await client.query(
-        `INSERT INTO matches (user_a_id, user_b_id)
-         VALUES ($1, $2)
+        `INSERT INTO matches (user_a_id, user_b_id, expires_at)
+         VALUES ($1, $2, NOW() + INTERVAL '7 days')
          ON CONFLICT (user_a_id, user_b_id) DO NOTHING
          RETURNING id`,
         [userA, userB],
@@ -355,6 +355,41 @@ export const unmatchUser = async (currentUserId: string, matchId: string) => {
   }
 };
 
+export const getBlockedUsers = async (currentUserId: string) => {
+  const result = await pool.query<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+    reason: string | null;
+    blocked_at: Date;
+  }>(
+    `SELECT u.id, u.first_name, u.last_name, u.avatar_url, b.reason, b.created_at AS blocked_at
+     FROM blocked_users b
+     INNER JOIN users u ON u.id = b.blocked_id
+     WHERE b.blocker_id = $1
+     ORDER BY b.created_at DESC`,
+    [currentUserId],
+  );
+  return result.rows.map((r) => ({
+    id: r.id,
+    firstName: r.first_name,
+    lastName: r.last_name,
+    avatarUrl: r.avatar_url,
+    reason: r.reason,
+    blockedAt: r.blocked_at,
+  }));
+};
+
+export const unblockUser = async (currentUserId: string, blockedId: string) => {
+  const result = await pool.query(
+    'DELETE FROM blocked_users WHERE blocker_id = $1 AND blocked_id = $2',
+    [currentUserId, blockedId],
+  );
+  if (!result.rowCount) throw new AppError('User not blocked', 404);
+  return { success: true };
+};
+
 export const blockUser = async (blockerId: string, blockedId: string, reason?: string) => {
   const client = await pool.connect();
   try {
@@ -458,6 +493,7 @@ export const getMatches = async (currentUserId: string) => {
     `SELECT
        m.id AS match_id,
        m.created_at,
+       m.expires_at,
        u.id AS other_user_id,
        u.first_name,
        u.last_name,
@@ -465,6 +501,7 @@ export const getMatches = async (currentUserId: string) => {
        u.bio,
        u.interests,
        u.location,
+       u.last_seen_at,
        lm.content AS last_message,
        lm.created_at AS last_message_at,
        lm.sender_id AS last_message_sender_id,
@@ -482,7 +519,8 @@ export const getMatches = async (currentUserId: string) => {
        SELECT COUNT(*)::text AS cnt FROM messages
        WHERE match_id = m.id AND sender_id <> $1 AND read_at IS NULL
      ) unread ON true
-     WHERE m.user_a_id = $1 OR m.user_b_id = $1
+     WHERE (m.user_a_id = $1 OR m.user_b_id = $1)
+       AND (m.expires_at IS NULL OR m.expires_at > NOW() OR EXISTS (SELECT 1 FROM messages WHERE match_id = m.id))
      ORDER BY COALESCE(lm.created_at, m.created_at) DESC`,
     [currentUserId],
   );
@@ -490,12 +528,14 @@ export const getMatches = async (currentUserId: string) => {
   const userIds = result.rows.map((row) => row.other_user_id);
   const skillsMap = await getSkillsMap(userIds);
 
-  return result.rows.map((row) => {
+  return result.rows.map((row: any) => {
     const skills = skillsMap.get(row.other_user_id) ?? { offeredSkills: [], learningSkills: [] };
-
+    const hasMessage = row.last_message != null;
     return {
       id: row.match_id,
       createdAt: row.created_at,
+      expiresAt: row.expires_at,
+      hasMessage,
       lastMessage: row.last_message,
       lastMessageAt: row.last_message_at,
       lastMessageIsMe: row.last_message_sender_id === currentUserId,
@@ -508,6 +548,7 @@ export const getMatches = async (currentUserId: string) => {
         bio: row.bio ?? '',
         interests: row.interests ?? '',
         location: row.location ?? '',
+        lastSeenAt: row.last_seen_at,
         ...skills,
       },
     };

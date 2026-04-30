@@ -78,3 +78,37 @@ export const exportDataRequest = async () => {
   const response = await api.get<unknown>('/profile/export');
   return response.data;
 };
+
+export type Completeness = { percent: number; missing: string[] };
+
+export const getCompleteness = async () => {
+  const response = await api.get<Completeness>('/profile/completeness');
+  return response.data;
+};
+
+export type BoostStatus = {
+  isPremium: boolean;
+  active: boolean;
+  boostUntil: string | null;
+  cooldownUntil: string | null;
+};
+
+export const getBoostStatusRequest = async () => {
+  const response = await api.get<BoostStatus>('/profile/boost');
+  return response.data;
+};
+
+export const activateBoostRequest = async () => {
+  const response = await api.post<{ boostUntil: string; durationMin: number }>('/profile/boost');
+  return response.data;
+};
+
+export const requestEmailVerificationCode = async () => {
+  const response = await api.post<{ success: boolean }>('/profile/verify-email/request');
+  return response.data;
+};
+
+export const confirmEmailVerificationCode = async (code: string) => {
+  const response = await api.post<{ success: boolean }>('/profile/verify-email/confirm', { code });
+  return response.data;
+};

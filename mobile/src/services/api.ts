@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://10.0.2.2:4000/api';
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'https://cofound-production-a055.up.railway.app/api';
 
 console.log('[CoFound] API_URL =', API_URL);
 

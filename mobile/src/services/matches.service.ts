@@ -48,6 +48,25 @@ export const getLikesReceived = async () => {
   return response.data.likes;
 };
 
+export type BlockedUser = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+  reason: string | null;
+  blockedAt: string;
+};
+
+export const getBlockedUsers = async () => {
+  const response = await api.get<{ blocked: BlockedUser[] }>('/matches/blocked');
+  return response.data.blocked;
+};
+
+export const unblockUser = async (userId: string) => {
+  const response = await api.delete<{ success: boolean }>(`/matches/blocked/${userId}`);
+  return response.data;
+};
+
 export const getMatches = async () => {
   const response = await api.get<{ matches: MatchItem[] }>('/matches');
   return response.data.matches;

@@ -51,6 +51,7 @@ export const getDiscoveryFeed = async (
     location: string | null;
     compatibility_score: string;
     super_liked_by_them: boolean;
+    is_boosted: boolean;
   }>(
     `WITH my_offer AS (
        SELECT skill_id FROM user_skills WHERE user_id = $1 AND skill_type = 'offer'
@@ -69,6 +70,7 @@ export const getDiscoveryFeed = async (
        u.avatar_url,
        u.interests,
        u.location,
+       (u.boost_until IS NOT NULL AND u.boost_until > NOW()) AS is_boosted,
        ROUND(
          ((
            SELECT COUNT(*)
@@ -104,7 +106,7 @@ export const getDiscoveryFeed = async (
             OR (m.user_b_id = $1 AND m.user_a_id = u.id)
        )
        ${locationClause}
-     ORDER BY super_liked_by_them DESC, compatibility_score DESC, u.created_at DESC
+     ORDER BY is_boosted DESC, super_liked_by_them DESC, compatibility_score DESC, u.created_at DESC
      LIMIT $2`,
     params,
   );
@@ -129,6 +131,7 @@ export const getDiscoveryFeed = async (
       location: row.location ?? '',
       compatibilityScore: Number(row.compatibility_score),
       superLikedByThem: row.super_liked_by_them,
+      isBoosted: row.is_boosted,
       photos,
       ...skills,
     };

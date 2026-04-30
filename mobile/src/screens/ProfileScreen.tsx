@@ -22,7 +22,7 @@ import { InputField } from '../components/InputField';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { SkillBadge } from '../components/SkillBadge';
 import { useAuth } from '../context/AuthContext';
-import { getMyProfile, updateMyProfile } from '../services/profile.service';
+import { activateBoostRequest, getBoostStatusRequest, getCompleteness, getMyProfile, updateMyProfile, requestEmailVerificationCode, BoostStatus, Completeness } from '../services/profile.service';
 import { getMyPhotos, addPhoto, deletePhoto } from '../services/api';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -61,6 +61,9 @@ export const ProfileScreen = () => {
     offeredSkills: Skill[];
     learningSkills: Skill[];
   } | null>(null);
+  const [completeness, setCompleteness] = useState<Completeness | null>(null);
+  const [boost, setBoost] = useState<BoostStatus | null>(null);
+  const [emailVerified, setEmailVerified] = useState<boolean>(true);
 
   const loadProfile = useCallback(async () => {
     try {
@@ -73,6 +76,7 @@ export const ProfileScreen = () => {
       setOfferedSkills(profile.offeredSkills.map((s) => s.name).join(', '));
       setLearningSkills(profile.learningSkills.map((s) => s.name).join(', '));
       setAvatarUrl(profile.avatarUrl ?? null);
+      setEmailVerified((profile as any).emailVerified ?? true);
       setProfileData({
         bio: profile.bio,
         interests: profile.interests,
@@ -80,10 +84,40 @@ export const ProfileScreen = () => {
         offeredSkills: profile.offeredSkills,
         learningSkills: profile.learningSkills,
       });
+      // Fire-and-forget load completeness + boost status
+      getCompleteness().then(setCompleteness).catch(() => {});
+      getBoostStatusRequest().then(setBoost).catch(() => {});
     } catch {
       Alert.alert('Error', 'No se pudo cargar el perfil.');
     }
   }, []);
+
+  const handleActivateBoost = async () => {
+    if (!boost?.isPremium) {
+      navigation.navigate('Pricing');
+      return;
+    }
+    try {
+      const result = await activateBoostRequest();
+      Alert.alert(
+        '🚀 Boost activado',
+        `Tu perfil aparecerá al principio durante ${result.durationMin} minutos.`,
+      );
+      const fresh = await getBoostStatusRequest();
+      setBoost(fresh);
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message ?? 'No se pudo activar el boost.');
+    }
+  };
+
+  const handleResendVerification = async () => {
+    try {
+      await requestEmailVerificationCode();
+      Alert.alert('Código enviado', 'Revisa tu email para verificar tu cuenta.');
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message ?? 'No se pudo reenviar el código.');
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {

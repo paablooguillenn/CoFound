@@ -26,17 +26,20 @@ export type Photo = {
 export type DiscoveryUser = UserProfile & {
   compatibilityScore: number;
   superLikedByThem?: boolean;
+  isBoosted?: boolean;
   photos?: Photo[];
 };
 
 export type MatchItem = {
   id: string;
   createdAt: string;
+  expiresAt: string | null;
+  hasMessage: boolean;
   lastMessage: string | null;
   lastMessageAt: string | null;
   lastMessageIsMe: boolean;
   unreadCount: number;
-  user: UserProfile;
+  user: UserProfile & { lastSeenAt?: string | null };
 };
 
 export type AuthUser = {
