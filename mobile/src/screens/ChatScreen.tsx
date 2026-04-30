@@ -35,6 +35,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 interface Message {
   id: string;
   senderId: string;
+  readAt?: string | null;
   content: string;
   createdAt: string;
 }
@@ -159,9 +160,19 @@ const AnimatedMessage = ({
         <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextThem]}>
           {item.content}
         </Text>
-        <Text style={[styles.timestamp, isMe ? styles.timestampMe : styles.timestampThem]}>
-          {formatTime(item.createdAt)}
-        </Text>
+        <View style={styles.msgFooter}>
+          <Text style={[styles.timestamp, isMe ? styles.timestampMe : styles.timestampThem]}>
+            {formatTime(item.createdAt)}
+          </Text>
+          {isMe && (
+            <Ionicons
+              name={item.readAt ? 'checkmark-done' : 'checkmark'}
+              size={14}
+              color={item.readAt ? '#60A5FA' : 'rgba(255,255,255,0.5)'}
+              style={{ marginLeft: 4 }}
+            />
+          )}
+        </View>
       </View>
     </Animated.View>
   );
@@ -755,7 +766,8 @@ const styles = StyleSheet.create({
   bubbleText: { fontSize: 15, lineHeight: 21 },
   bubbleTextMe: { color: colors.white },
   bubbleTextThem: { color: colors.text },
-  timestamp: { fontSize: 11, marginTop: 4 },
+  msgFooter: { flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', marginTop: 4 },
+  timestamp: { fontSize: 11 },
   timestampMe: { color: 'rgba(255,255,255,0.6)' },
   timestampThem: { color: colors.textMuted },
 

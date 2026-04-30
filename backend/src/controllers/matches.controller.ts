@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 
-import { getMatches, likeUser, passUser, superLikeUser, unmatchUser, blockUser, getMatchProfile, reportUser, getUnreadTotal, rewindLastSwipe, getLikesReceived } from '../services/match.service';
+import { getMatches, likeUser, passUser, superLikeUser, unmatchUser, blockUser, getMatchProfile, reportUser, getUnreadTotal, rewindLastSwipe, getLikesReceived, getBlockedUsers, unblockUser } from '../services/match.service';
 
 const likeSchema = z.object({
   targetUserId: z.string().uuid(),
@@ -68,6 +68,24 @@ export const getLikesReceivedController = async (request: Request, response: Res
   try {
     const likes = await getLikesReceived(request.user!.id);
     response.json({ likes });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getBlockedUsersController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const blocked = await getBlockedUsers(request.user!.id);
+    response.json({ blocked });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const unblockUserController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const result = await unblockUser(request.user!.id, request.params.userId);
+    response.json(result);
   } catch (error) {
     next(error);
   }

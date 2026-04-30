@@ -22,10 +22,25 @@ CREATE TABLE IF NOT EXISTS users (
   premium_since TIMESTAMP WITH TIME ZONE,
   preferences JSONB NOT NULL DEFAULT '{}'::jsonb,
   two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE,
+  email_verified BOOLEAN NOT NULL DEFAULT FALSE,
+  last_seen_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  boost_until TIMESTAMP WITH TIME ZONE,
+  last_boost_at TIMESTAMP WITH TIME ZONE,
   deactivated_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE TABLE IF NOT EXISTS email_verification_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash TEXT NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  used_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_evt_user ON email_verification_tokens(user_id, used_at);
+CREATE INDEX IF NOT EXISTS idx_users_last_seen ON users(last_seen_at);
 
 CREATE TABLE IF NOT EXISTS reports (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -93,6 +108,7 @@ CREATE TABLE IF NOT EXISTS matches (
   user_a_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   user_b_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   status VARCHAR(40) DEFAULT 'active',
+  expires_at TIMESTAMP WITH TIME ZONE,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   UNIQUE (user_a_id, user_b_id),
   CHECK (user_a_id <> user_b_id)

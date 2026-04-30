@@ -2,11 +2,14 @@ import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 
 import {
+  activateBoost,
   changeEmail,
   changePassword,
+  computeProfileCompleteness,
   deactivateAccount,
   deleteAccount,
   exportUserData,
+  getBoostStatus,
   getPreferences,
   getProfileById,
   reactivateAccount,
@@ -15,6 +18,7 @@ import {
   updateProfile,
   upgradeToPremium,
 } from '../services/profile.service';
+import { confirmEmailVerification, requestEmailVerification } from '../services/auth.service';
 
 const skillSchema = z.object({
   name: z.string().min(1),
@@ -168,6 +172,54 @@ export const exportDataController = async (request: Request, response: Response,
     const data = await exportUserData(request.user!.id);
     response.setHeader('Content-Disposition', 'attachment; filename="cofound-export.json"');
     response.json(data);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const completenessController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const result = await computeProfileCompleteness(request.user!.id);
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const activateBoostController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const result = await activateBoost(request.user!.id);
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getBoostStatusController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const result = await getBoostStatus(request.user!.id);
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const verifyEmailSchema = z.object({ code: z.string().regex(/^\d{6}$/) });
+
+export const requestEmailVerificationController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const result = await requestEmailVerification(request.user!.id);
+    response.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const confirmEmailVerificationController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const { code } = verifyEmailSchema.parse(request.body);
+    const result = await confirmEmailVerification(request.user!.id, code);
+    response.json(result);
   } catch (error) {
     next(error);
   }

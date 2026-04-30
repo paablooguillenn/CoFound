@@ -1,14 +1,19 @@
 import { Router } from 'express';
 
 import {
+  activateBoostController,
   changeEmailController,
   changePasswordController,
+  completenessController,
+  confirmEmailVerificationController,
   deactivateAccountController,
   deleteAccountController,
   exportDataController,
+  getBoostStatusController,
   getMyProfileController,
   getPreferencesController,
   reactivateAccountController,
+  requestEmailVerificationController,
   toggle2FAController,
   updateMyProfileController,
   updatePreferencesController,
@@ -29,3 +34,8 @@ profileRouter.get('/preferences', getPreferencesController);
 profileRouter.patch('/preferences', updatePreferencesController);
 profileRouter.post('/2fa', toggle2FAController);
 profileRouter.get('/export', exportDataController);
+profileRouter.get('/completeness', completenessController);
+profileRouter.post('/boost', activateBoostController);
+profileRouter.get('/boost', getBoostStatusController);
+profileRouter.post('/verify-email/request', requestEmailVerificationController);
+profileRouter.post('/verify-email/confirm', confirmEmailVerificationController);
