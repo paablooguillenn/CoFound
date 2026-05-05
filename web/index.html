@@ -6,29 +6,6 @@
 <title>CoFound — Encuentra al co-founder que te falta</title>
 <link rel="icon" type="image/png" href="assets/logo-mark.png" />
 
-<!-- SEO -->
-<meta name="description" content="CoFound: swipe, match y chat con emprendedores cuyas skills complementan las tuyas. Encuentra al co-founder perfecto para tu startup. Descarga el APK gratis." />
-<meta name="keywords" content="cofounder, co-founder, emprendedores, startup, networking, matching, equipo, fundador, socio, España, LATAM" />
-<meta name="author" content="CoFound" />
-<meta name="theme-color" content="#0A0A0A" />
-<meta name="robots" content="index, follow" />
-<link rel="canonical" href="https://cofound.app/" />
-
-<!-- Open Graph (WhatsApp, Facebook, LinkedIn) -->
-<meta property="og:type" content="website" />
-<meta property="og:locale" content="es_ES" />
-<meta property="og:title" content="CoFound — Encuentra al co-founder que te falta" />
-<meta property="og:description" content="Swipe, match y chat con emprendedores cuyas skills complementan las tuyas. Sin ruido de LinkedIn, sin eventos caros. Solo personas con las que construir." />
-<meta property="og:image" content="assets/logocofound.png" />
-<meta property="og:url" content="https://cofound.app/" />
-<meta property="og:site_name" content="CoFound" />
-
-<!-- Twitter / X -->
-<meta name="twitter:card" content="summary_large_image" />
-<meta name="twitter:title" content="CoFound — Encuentra al co-founder que te falta" />
-<meta name="twitter:description" content="Swipe, match y chat con emprendedores cuyas skills complementan las tuyas. Descarga gratis." />
-<meta name="twitter:image" content="assets/logocofound.png" />
-
 <template id="__bundler_thumbnail">
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
     <rect width="400" height="400" fill="#0a0a0a"/>
@@ -264,8 +241,12 @@
       </nav>
 
       <div class="flex items-center gap-2">
+        <button id="langToggle" type="button" aria-label="Change language" class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-line bg-surface hover:bg-elev hover:border-line2 text-silver-300 text-[12px] font-semibold mono uppercase tracking-wider transition">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+          <span id="langToggleLabel">EN</span>
+        </button>
         <a href="https://github.com/paablooguillenn/CoFound/releases/latest/download/cofound.apk" download="cofound.apk" class="hidden sm:inline-flex btn-primary items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold cursor-pointer">
-          Descargar APK
+          <span data-i18n-key="nav.download">Descargar APK</span>
           <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
         </a>
       </div>
@@ -870,8 +851,8 @@
 
       <!-- Premium (gold) -->
       <div class="relative rounded-[24px] p-[1.5px] reveal" style="background: linear-gradient(180deg, #E6CD85 0%, #A67C2E 100%);">
-        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
-          <div class="gold-bg text-bg text-[11px] mono uppercase tracking-[0.2em] px-3 py-1.5 rounded-full font-semibold" style="box-shadow: 0 10px 30px -10px rgba(201,168,76,.55);">Más popular</div>
+        <div class="absolute -top-3 left-1/2 -translate-x-1/2 z-10 whitespace-nowrap">
+          <div class="gold-bg text-bg text-[11px] mono uppercase tracking-[0.2em] px-4 py-1.5 rounded-full font-semibold whitespace-nowrap" style="box-shadow: 0 10px 30px -10px rgba(201,168,76,.55);">Más popular</div>
         </div>
         <div class="rounded-[22px] p-10 relative overflow-hidden" style="background: linear-gradient(180deg, #1A1A1A 0%, #0A0A0A 100%);">
           <div class="absolute -right-20 -top-20 w-72 h-72 rounded-full" style="background: radial-gradient(circle, rgba(201,168,76,.12), transparent 60%);"></div>
@@ -881,7 +862,7 @@
               <h3 class="font-display text-[32px] font-semibold tracking-tight mt-1 text-silver-100">Para ir en serio</h3>
             </div>
             <div class="text-right">
-              <div class="font-display text-[48px] font-bold tracking-tighter leading-none text-silver-100">€9<span class="text-[24px] text-silver-600">,99</span></div>
+              <div class="font-display text-[48px] font-bold tracking-tighter leading-none text-silver-100">€4<span class="text-[24px] text-silver-600">,99</span></div>
               <div class="mono text-[12px] text-silver-600">/ mes</div>
             </div>
           </div>
@@ -1252,6 +1233,338 @@
     if (d.type === '__deactivate_edit_mode') panel.classList.remove('open');
   });
   try { window.parent.postMessage({type:'__edit_mode_available'}, '*'); } catch(e){}
+
+  /* ============================================================
+     i18n — ES (default) ⇄ EN runtime translator
+     Walks the DOM once, snapshots text nodes + key attributes,
+     swaps via dictionary on click. Persists in localStorage.
+     ============================================================ */
+  const I18N = {
+    // Plain text-node translations (Spanish source → English)
+    "Cómo funciona": "How it works",
+    "Premium": "Premium",
+    "FAQ": "FAQ",
+    "Features": "Features",
+    "Descargar APK": "Download APK",
+    "Beta abierta · v2.4": "Open beta · v2.4",
+    "Encuentra al": "Find the",
+    "co-founder": "co-founder",
+    "que te falta.": "you're missing.",
+    "Swipe, match y chat con emprendedores cuyas skills complementan las tuyas. Sin ruido de LinkedIn, sin eventos caros. Solo personas con las que construir.":
+      "Swipe, match and chat with founders whose skills complement yours. No LinkedIn noise, no expensive events. Just people to build with.",
+    "Próximamente": "Coming soon",
+    "App Store": "App Store",
+    "Android": "Android",
+    "ya conectados": "already connected",
+    "+10.000 emprendedores": "+10,000 founders",
+    "Discover": "Discover",
+    "ofrezco": "I offer",
+    "OFREZCO": "I OFFER",
+    "busco": "I'm looking for",
+    "BUSCO": "LOOKING FOR",
+    "Marketing digital": "Digital marketing",
+    "React Native": "React Native",
+    "Barcelona · Producto": "Barcelona · Product",
+    "It's a match": "It's a match",
+    "¡Hagamos": "Let's make",
+    "magia!": "magic!",
+    "Tú y": "You and",
+    "os disteis like.": "liked each other.",
+    "Enviar mensaje": "Send message",
+    "En línea": "Online",
+    "Hey! Vi tu perfil, pareces el perfil técnico que necesito.": "Hey! Saw your profile, you look like the technical profile I need.",
+    "Justo buscaba alguien de growth. ¿Café el jueves?": "I was looking for someone in growth. Coffee on Thursday?",
+    "Perfecto. Te mando calendario.": "Perfect. I'll send you my calendar.",
+    "Como se ha visto en": "As seen on",
+    "El problema": "The problem",
+    "Emprender solo es": "Building alone is",
+    "ir a ciegas": "flying blind",
+    "El 65% de las startups fallidas lo hacen por conflictos del equipo fundador. Y encontrar un buen partner es más duro que vender tu primer MVP.":
+      "65% of failed startups fail due to founding team conflicts. And finding a good partner is harder than selling your first MVP.",
+    "Buscar co-founder es imposible": "Finding a co-founder is impossible",
+    "Preguntas a amigos, publicas en foros, asistes a meetups… y tras 6 meses sigues sin un partner con skills complementarios.":
+      "You ask friends, post on forums, attend meetups… and after 6 months you still don't have a partner with complementary skills.",
+    "avg. 7.2 meses": "avg. 7.2 months",
+    "LinkedIn no conecta emprendedores": "LinkedIn doesn't connect founders",
+    "InMails fríos, perfiles corporativos y cero contexto. No está diseñado para encontrar a alguien con quien jugártela.":
+      "Cold InMails, corporate profiles and zero context. It wasn't designed to find someone to bet on.",
+    "2.3% tasa de respuesta": "2.3% response rate",
+    "Los eventos no escalan": "Events don't scale",
+    "Entradas caras, dos horas en una sala, cinco tarjetas que no recuerdas. El networking analógico es un lujo ineficiente.":
+      "Pricey tickets, two hours in a room, five cards you can't remember. Analog networking is an inefficient luxury.",
+    "€450 / evento": "€450 / event",
+    "Tres pasos. Un co-founder.": "Three steps. One co-founder.",
+    "Desde crear tu perfil hasta cerrar tu primera reunión. Normalmente, menos de una semana.":
+      "From building your profile to closing your first meeting. Usually, less than a week.",
+    "Tus skills": "Your skills",
+    "Ofrezco": "Offering",
+    "+ añadir": "+ add",
+    "Busco": "Looking for",
+    "Marketing": "Marketing",
+    "Ventas B2B": "B2B sales",
+    "Backend": "Backend",
+    "Perfil 72%": "Profile 72%",
+    "Define lo que": "Define what you",
+    "ofreces": "offer",
+    "y lo que": "and what you",
+    "buscas": "look for",
+    "Skills, sector, ubicación, dedicación. Cuanto más claro, mejores matches.":
+      "Skills, sector, location, commitment. The clearer, the better the matches.",
+    "Full-stack · Madrid": "Full-stack · Madrid",
+    "Haz": "Do a",
+    "swipe": "swipe",
+    "entre perfiles filtrados": "through filtered profiles",
+    "Verificados por email, LinkedIn y prueba rápida. Solo gente real con idea real.":
+      "Verified by email, LinkedIn and a quick check. Only real people with real ideas.",
+    "Nuevo match": "New match",
+    "¡Hola! Vi que buscas CMO.": "Hi! Saw you're looking for a CMO.",
+    "Sí! ¿Café esta semana?": "Yes! Coffee this week?",
+    "Martes a las 10.": "Tuesday at 10.",
+    "Hablad, validad y": "Talk, validate and",
+    "construid": "build",
+    "Chat integrado, agenda compartida y plantillas para alinear visión antes de firmar nada.":
+      "Built-in chat, shared calendar and templates to align vision before signing anything.",
+    "Todo lo que necesitas, nada de lo que sobra.": "Everything you need, nothing you don't.",
+    "Una app pulida, pensada para la intención más concreta del mundo emprendedor:":
+      "A polished app, built for the most specific intent in the founder world:",
+    "encontrar equipo": "find your team",
+    "Matching inteligente": "Smart matching",
+    "Skills que": "Skills that",
+    "encajan": "fit",
+    ", no listados que se parecen.": ", not listings that look alike.",
+    "Nuestro motor cruza lo que ofreces con lo que otros buscan (y viceversa). Resultado: menos swipes, más matches útiles.":
+      "Our engine crosses what you offer with what others seek (and vice versa). Result: fewer swipes, more useful matches.",
+    "Compatibilidad": "Compatibility",
+    "Match rate": "Match rate",
+    "Match · Lucía ↔ Tú": "Match · Lucía ↔ You",
+    "ofrece": "offers",
+    "Swipe rápido": "Quick swipe",
+    "Decide en 2 segundos, no en 2 semanas": "Decide in 2 seconds, not 2 weeks",
+    "Madrid · Fintech": "Madrid · Fintech",
+    "Perfiles verificados": "Verified profiles",
+    "Solo humanos reales con idea real": "Only real humans with real ideas",
+    "Filtros finos": "Fine filters",
+    "Ubicación, sector, dedicación, intereses": "Location, sector, commitment, interests",
+    "Madrid": "Madrid",
+    "Fintech": "Fintech",
+    "Full-time": "Full-time",
+    "Remoto ok": "Remote ok",
+    "Super-likes, swipes ilimitados y ve quién te dio like": "Super-likes, unlimited swipes and see who liked you",
+    "Chat integrado": "Built-in chat",
+    "Sin migrar a WhatsApp hasta que decidáis.": "No need to migrate to WhatsApp until you decide.",
+    "Privacidad radical": "Radical privacy",
+    "Tus ideas son tuyas hasta que haya match mutuo.": "Your ideas stay yours until there's a mutual match.",
+    "Usuarios activos": "Active users",
+    "Matches cada mes": "Matches every month",
+    "Startups fundadas": "Startups founded",
+    "App Store rating": "App Store rating",
+    "Planes": "Plans",
+    "Empieza gratis.": "Start free.",
+    "Mejora cuando quieras": "Upgrade whenever you want",
+    "Sin paywalls raros. Premium multiplica tu alcance cuando estás listo para mover ficha.":
+      "No weird paywalls. Premium multiplies your reach when you're ready to make a move.",
+    "Free": "Free",
+    "Para empezar": "To get started",
+    "/ para siempre": "/ forever",
+    "5 swipes al día": "5 swipes per day",
+    "Chat tras match mutuo": "Chat after mutual match",
+    "Filtros básicos (skills, ubicación)": "Basic filters (skills, location)",
+    "Perfil verificado": "Verified profile",
+    "Ver quién te dio like": "See who liked you",
+    "Super-likes": "Super-likes",
+    "Descargar gratis": "Download free",
+    "Más popular": "Most popular",
+    "Para ir en serio": "To get serious",
+    "/ mes": "/ month",
+    "Swipes ilimitados": "Unlimited swipes",
+    "cada día": "every day",
+    "en tiempo real": "in real time",
+    "Super-likes ilimitados": "Unlimited super-likes",
+    "Filtros avanzados (dedicación, stage)": "Advanced filters (commitment, stage)",
+    "Boost semanal de perfil": "Weekly profile boost",
+    "Prioridad en soporte": "Priority support",
+    "Empezar Premium": "Start Premium",
+    "Historias": "Stories",
+    "Matches que se convirtieron en empresas.": "Matches that became companies.",
+    "Anterior": "Previous",
+    "Siguiente": "Next",
+    "\"Conocí a mi CTO en CoFound un martes. En tres semanas teníamos MVP, ronda pre-seed y un nombre decente.\"":
+      "\"I met my CTO on CoFound on a Tuesday. In three weeks we had an MVP, pre-seed round and a decent name.\"",
+    "CEO, Sienta · Valencia": "CEO, Sienta · Valencia",
+    "\"Después de un año rebotando entre eventos, por fin encontré a alguien con quien construir. CoFound entiende lo que un emprendedor necesita.\"":
+      "\"After a year bouncing between events, I finally found someone to build with. CoFound gets what a founder needs.\"",
+    "Co-founder, Helibee · CDMX": "Co-founder, Helibee · CDMX",
+    "\"El filtro por skills complementarios es oro puro. En 48h había tenido cinco conversaciones reales con perfiles comerciales.\"":
+      "\"The complementary-skills filter is pure gold. In 48h I had five real conversations with sales profiles.\"",
+    "CTO, Pluma · Lisboa": "CTO, Pluma · Lisbon",
+    "\"Soy estudiante de último año y encontré a mi CMO en la app. Vamos a lanzar mi TFG como startup real.\"":
+      "\"I'm a final-year student and found my CMO in the app. We're launching my thesis project as a real startup.\"",
+    "Fundador, Foli · Sevilla": "Founder, Foli · Seville",
+    "Preguntas frecuentes": "Frequently asked questions",
+    "¿Es gratis usar CoFound?": "Is CoFound free to use?",
+    "Sí. Puedes registrarte, hacer hasta 5 swipes al día, ver matches y chatear sin pagar nada. Premium desbloquea swipes ilimitados, super-likes ilimitados y saber quién te dio like.":
+      "Yes. You can sign up, do up to 5 swipes a day, see matches and chat for free. Premium unlocks unlimited swipes, unlimited super-likes and seeing who liked you.",
+    "¿En qué se diferencia de LinkedIn?": "How is it different from LinkedIn?",
+    "LinkedIn está hecho para CVs y ofertas de empleo. CoFound está hecho exclusivamente para que dos emprendedores con skills complementarios se encuentren con intención de construir juntos.":
+      "LinkedIn is built for CVs and job offers. CoFound is built exclusively for two founders with complementary skills to find each other with the intent to build together.",
+    "¿Cómo se verifican los perfiles?": "How are profiles verified?",
+    "Con verificación por email, LinkedIn y un pequeño prompt de onboarding que demuestra que eres humano y tienes contexto emprendedor mínimo.":
+      "Through email and LinkedIn verification, plus a small onboarding prompt that proves you're human and have minimum founder context.",
+    "¿En qué países está disponible?": "Which countries is it available in?",
+    "Actualmente en España, México, Colombia, Argentina y Chile. Abriendo Perú, Portugal y Brasil en 2026.":
+      "Currently in Spain, Mexico, Colombia, Argentina and Chile. Opening Peru, Portugal and Brazil in 2026.",
+    "¿Puedo cancelar Premium cuando quiera?": "Can I cancel Premium anytime?",
+    "Sí, desde los ajustes de tu cuenta. Sin penalización ni preguntas. Conservas tus matches y chats aunque vuelvas al plan gratuito.":
+      "Yes, from your account settings. No penalties, no questions. You keep your matches and chats even if you go back to the free plan.",
+    "¿Y mi idea? ¿La protegéis?": "What about my idea? Do you protect it?",
+    "Tu perfil muestra skills y sector, no tu idea detallada. Recomendamos compartir la tesis completa una vez haya match mutuo y confianza, y facilitamos una plantilla ligera de NDA en el chat.":
+      "Your profile shows skills and sector, not your detailed idea. We recommend sharing the full thesis once there's a mutual match and trust, and we provide a lightweight NDA template in chat.",
+    "Deja de emprender solo.": "Stop building alone.",
+    "Descarga CoFound y empieza a conocer a tu próximo equipo esta semana. En serio.":
+      "Download CoFound and start meeting your next team this week. Really.",
+    "Descargar APK · v2.4": "Download APK · v2.4",
+    "Sin tarjeta · Sin fricción · Sin eventos caros": "No card · No friction · No expensive events",
+    "La app donde los emprendedores encuentran al equipo que les faltaba.":
+      "The app where founders find the team they were missing.",
+    "Producto": "Product",
+    "Descargar": "Download",
+    "Empresa": "Company",
+    "Sobre nosotros": "About us",
+    "Blog": "Blog",
+    "Careers": "Careers",
+    "Prensa": "Press",
+    "Legal": "Legal",
+    "Términos": "Terms",
+    "Privacidad": "Privacy",
+    "Cookies": "Cookies",
+    "Uso permitido": "Acceptable use",
+    "Contacto": "Contact",
+    "Soporte": "Support",
+    "Partners": "Partners",
+    "Madrid · CDMX": "Madrid · CDMX",
+    "© 2026 CoFound, S.L. Hecho con café en Madrid.": "© 2026 CoFound, S.L. Made with coffee in Madrid.",
+    "v2.4.1 · ES/LATAM": "v2.4.1 · ES/LATAM",
+    "Tweaks": "Tweaks",
+    "Primario (plata)": "Primary (silver)",
+    "Acento (rosa)": "Accent (pink)",
+    "Premium (dorado)": "Premium (gold)",
+    "Densidad": "Density",
+    "Compact": "Compact",
+    "Comfortable": "Comfortable",
+    "Spacious": "Spacious",
+    "Titular Hero": "Hero headline",
+    "ofrece": "offers"
+  };
+
+  // Attribute translations (alt, aria-label, placeholder, title, onclick alert text)
+  const I18N_ATTR = {
+    "Logo": "Logo",
+    "Anterior": "Previous",
+    "Siguiente": "Next",
+    "Twitter": "Twitter",
+    "Instagram": "Instagram",
+    "LinkedIn": "LinkedIn",
+    "TikTok": "TikTok",
+    "Próximamente disponible en iOS. Por ahora descarga el APK para Android.":
+      "Coming soon on iOS. For now download the APK for Android."
+  };
+
+  // Capture original text content for every text node so we can restore on toggle back to ES
+  const TEXT_NODES = [];
+  (function snapshot(root) {
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode: (n) => {
+        const p = n.parentElement;
+        if (!p) return NodeFilter.FILTER_REJECT;
+        const tag = p.tagName;
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'TEMPLATE') return NodeFilter.FILTER_REJECT;
+        if (!n.nodeValue || !n.nodeValue.trim()) return NodeFilter.FILTER_REJECT;
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    let node;
+    while ((node = walker.nextNode())) {
+      TEXT_NODES.push({ node, es: node.nodeValue });
+    }
+  })(document.body);
+
+  // Capture attributes we want to translate
+  const ATTR_NODES = [];
+  ['alt','aria-label','placeholder','title'].forEach(attr => {
+    document.querySelectorAll('[' + attr + ']').forEach(el => {
+      ATTR_NODES.push({ el, attr, es: el.getAttribute(attr) });
+    });
+  });
+  // onclick alerts
+  const ONCLICK_NODES = [];
+  document.querySelectorAll('[onclick]').forEach(el => {
+    ONCLICK_NODES.push({ el, es: el.getAttribute('onclick') });
+  });
+
+  function translateText(esText) {
+    const trimmed = esText.trim();
+    if (!trimmed) return esText;
+    // Try full match first
+    if (I18N[trimmed]) {
+      // Preserve leading/trailing whitespace
+      const lead = esText.match(/^\s*/)[0];
+      const trail = esText.match(/\s*$/)[0];
+      return lead + I18N[trimmed] + trail;
+    }
+    return esText;
+  }
+
+  function applyLang(lang) {
+    document.documentElement.setAttribute('lang', lang);
+    // Text nodes
+    TEXT_NODES.forEach(({ node, es }) => {
+      if (lang === 'es') {
+        node.nodeValue = es;
+      } else {
+        node.nodeValue = translateText(es);
+      }
+    });
+    // Attributes
+    ATTR_NODES.forEach(({ el, attr, es }) => {
+      if (lang === 'es') {
+        el.setAttribute(attr, es);
+      } else {
+        const trimmed = (es || '').trim();
+        const map = I18N_ATTR[trimmed] || I18N[trimmed];
+        if (map) el.setAttribute(attr, map);
+      }
+    });
+    // onclick alerts (string replace inside)
+    ONCLICK_NODES.forEach(({ el, es }) => {
+      if (lang === 'es') {
+        el.setAttribute('onclick', es);
+      } else {
+        let next = es;
+        Object.entries(I18N_ATTR).forEach(([k, v]) => {
+          next = next.split(k).join(v);
+        });
+        el.setAttribute('onclick', next);
+      }
+    });
+    // Toggle label
+    const lbl = document.getElementById('langToggleLabel');
+    if (lbl) lbl.textContent = lang === 'es' ? 'EN' : 'ES';
+    // FAQ heights re-measure (open ones)
+    document.querySelectorAll('.faq-item.open .faq-a').forEach(a => {
+      a.style.maxHeight = a.scrollHeight + 'px';
+    });
+    try { localStorage.setItem('cofound-lang', lang); } catch(e){}
+  }
+
+  // Toggle button
+  let currentLang = 'es';
+  try { currentLang = localStorage.getItem('cofound-lang') || 'es'; } catch(e){}
+  if (currentLang === 'en') applyLang('en');
+
+  document.getElementById('langToggle').addEventListener('click', () => {
+    currentLang = currentLang === 'es' ? 'en' : 'es';
+    applyLang(currentLang);
+  });
 </script>
 
 </body>
