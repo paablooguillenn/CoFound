@@ -22,16 +22,11 @@ import { addPhoto, getMyPhotos } from '../services/api';
 import { improveBioWithAi } from '../services/profile.service';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
-import { GOAL_OPTIONS, LEVEL_OPTIONS, SKILL_OPTIONS } from '../utils/profileLabels';
+import { GOAL_OPTIONS, INTEREST_AREAS, LEVEL_OPTIONS, OTHER_OPTION, SKILL_OPTIONS, parseCustomList } from '../utils/profileLabels';
 import { EntrepreneurLevel, Goal } from '../types/models';
 
 const TOTAL_STEPS = 7;
 const MIN_PHOTOS = 1;
-
-const INTEREST_AREAS = [
-  'Tecnología', 'E-commerce', 'Servicios', 'SaaS', 'Marketing',
-  'Educación', 'Salud', 'Fintech', 'Sostenibilidad', 'Entretenimiento',
-];
 
 type Photo = { id: string; url: string; sort_order: number };
 
@@ -42,8 +37,11 @@ export const CreateProfileScreen = () => {
   const [entrepreneurLevel, setEntrepreneurLevel] = useState<EntrepreneurLevel | ''>('');
   const [goal, setGoal] = useState<Goal | ''>('');
   const [interestAreas, setInterestAreas] = useState<string[]>([]);
+  const [customInterests, setCustomInterests] = useState('');
   const [skillsHave, setSkillsHave] = useState<string[]>([]);
+  const [customSkillsHave, setCustomSkillsHave] = useState('');
   const [skillsWant, setSkillsWant] = useState<string[]>([]);
+  const [customSkillsWant, setCustomSkillsWant] = useState('');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -131,14 +129,23 @@ export const CreateProfileScreen = () => {
     }
   };
 
+  // A list "counts" as filled if the user picked at least one pill that isn't
+  // just "Otras", OR if they picked "Otras" AND typed at least one custom value.
+  const isListFilled = (selected: string[], custom: string): boolean => {
+    const concrete = selected.filter((s) => s !== OTHER_OPTION);
+    if (concrete.length > 0) return true;
+    if (selected.includes(OTHER_OPTION) && parseCustomList(custom).length > 0) return true;
+    return false;
+  };
+
   const canProceed = () => {
     switch (step) {
       case 1: return bio.length >= 20;
       case 2: return entrepreneurLevel !== '';
       case 3: return goal !== '';
-      case 4: return interestAreas.length > 0;
-      case 5: return skillsHave.length > 0;
-      case 6: return skillsWant.length > 0;
+      case 4: return isListFilled(interestAreas, customInterests);
+      case 5: return isListFilled(skillsHave, customSkillsHave);
+      case 6: return isListFilled(skillsWant, customSkillsWant);
       case 7: return photos.length >= MIN_PHOTOS;
       default: return false;
     }
@@ -152,16 +159,27 @@ export const CreateProfileScreen = () => {
     }
     try {
       setSaving(true);
+      // Merge predefined pills + custom values typed under "Otras".
+      // The literal "Otras" marker is dropped — only the typed values matter.
+      const buildList = (selected: string[], custom: string): { name: string }[] => {
+        const concrete = selected.filter((s) => s !== OTHER_OPTION);
+        const customs = parseCustomList(custom);
+        return [...concrete, ...customs].map((name) => ({ name }));
+      };
+      const interestsList = [
+        ...interestAreas.filter((s) => s !== OTHER_OPTION),
+        ...parseCustomList(customInterests),
+      ];
       await updateMyProfile({
         firstName: user?.firstName ?? '',
         lastName: user?.lastName ?? '',
         bio,
-        interests: interestAreas.join(', '),
+        interests: interestsList.join(', '),
         location: '',
         entrepreneurLevel: entrepreneurLevel || null,
         goal: goal || null,
-        offeredSkills: skillsHave.map((name) => ({ name })),
-        learningSkills: skillsWant.map((name) => ({ name })),
+        offeredSkills: buildList(skillsHave, customSkillsHave),
+        learningSkills: buildList(skillsWant, customSkillsWant),
       });
       await markProfileComplete();
     } catch {
@@ -340,6 +358,15 @@ export const CreateProfileScreen = () => {
                   </TouchableOpacity>
                 ))}
               </View>
+              {interestAreas.includes(OTHER_OPTION) && (
+                <TextInput
+                  style={styles.customInput}
+                  value={customInterests}
+                  onChangeText={setCustomInterests}
+                  placeholder="Escribe tus áreas de interés (separadas por coma)"
+                  placeholderTextColor={colors.textMuted}
+                />
+              )}
             </Animated.View>
           )}
 
@@ -366,6 +393,15 @@ export const CreateProfileScreen = () => {
                   </TouchableOpacity>
                 ))}
               </View>
+              {skillsHave.includes(OTHER_OPTION) && (
+                <TextInput
+                  style={styles.customInput}
+                  value={customSkillsHave}
+                  onChangeText={setCustomSkillsHave}
+                  placeholder="Escribe tus habilidades (separadas por coma)"
+                  placeholderTextColor={colors.textMuted}
+                />
+              )}
             </Animated.View>
           )}
 
@@ -407,6 +443,15 @@ export const CreateProfileScreen = () => {
                   );
                 })}
               </View>
+              {skillsWant.includes(OTHER_OPTION) && (
+                <TextInput
+                  style={styles.customInput}
+                  value={customSkillsWant}
+                  onChangeText={setCustomSkillsWant}
+                  placeholder="Escribe lo que buscas (separado por comas)"
+                  placeholderTextColor={colors.textMuted}
+                />
+              )}
             </Animated.View>
           )}
 
@@ -679,6 +724,17 @@ const styles = StyleSheet.create({
   },
   pillTextSelected: { color: colors.background, fontWeight: '700' },
   pillTextDisabled: { color: colors.textMuted },
+  customInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.5)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: colors.text,
+    fontSize: 14,
+    backgroundColor: 'rgba(74,222,128,0.08)',
+    marginTop: 4,
+  },
   photoGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',

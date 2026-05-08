@@ -1,14 +1,38 @@
 import { EntrepreneurLevel, Goal } from '../types/models';
 
+// Marker pill name used at the end of every selectable list. When the user
+// taps it we expose an inline TextInput so they can type custom values not
+// included in the predefined catalogue.
+export const OTHER_OPTION = 'Otras';
+
 // Catálogo único de habilidades disponibles. Compartido por el wizard de
-// creación de perfil y la edición desde Profile.
+// creación de perfil y la edición desde Profile. La opción "Otras" siempre
+// aparece la última y abre un input para que el usuario añada las suyas.
 export const SKILL_OPTIONS = [
   'Marketing Digital', 'Programación', 'Diseño UX/UI', 'Ventas',
   'Finanzas', 'Desarrollo Web', 'Gestión de Proyectos', 'SEO/SEM',
   'Redes Sociales', 'Copywriting', 'Análisis de Datos', 'E-commerce',
   'Networking', 'Estrategia de Negocio', 'Desarrollo Móvil',
   'Blockchain', 'Inteligencia Artificial', 'Producción de Video',
+  OTHER_OPTION,
 ];
+
+// Áreas de interés / sectores. Igual que SKILL_OPTIONS, terminan con "Otras".
+export const INTEREST_AREAS = [
+  'Tecnología', 'E-commerce', 'Servicios', 'SaaS', 'Marketing',
+  'Educación', 'Salud', 'Fintech', 'Sostenibilidad', 'Entretenimiento',
+  OTHER_OPTION,
+];
+
+/**
+ * Splits a comma-separated string of custom values into a clean array.
+ * Used when the user types extra skills/interests under "Otras".
+ */
+export const parseCustomList = (raw: string): string[] =>
+  raw
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s.length <= 60);
 
 export const LEVEL_META: Record<EntrepreneurLevel, { label: string; color: string; bg: string; icon: string }> = {
   principiante: { label: 'Principiante', color: '#4ADE80', bg: 'rgba(74,222,128,0.15)', icon: 'leaf' },

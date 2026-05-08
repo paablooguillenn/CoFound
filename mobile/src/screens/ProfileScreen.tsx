@@ -31,7 +31,14 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { EntrepreneurLevel, Goal, Skill } from '../types/models';
 import { AppStackParamList } from '../types/navigation';
-import { LEVEL_OPTIONS, GOAL_OPTIONS, SKILL_OPTIONS } from '../utils/profileLabels';
+import {
+  LEVEL_OPTIONS,
+  GOAL_OPTIONS,
+  SKILL_OPTIONS,
+  INTEREST_AREAS,
+  OTHER_OPTION,
+  parseCustomList,
+} from '../utils/profileLabels';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -47,10 +54,13 @@ export const ProfileScreen = () => {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [bio, setBio] = useState('');
-  const [interests, setInterests] = useState('');
+  const [interestPills, setInterestPills] = useState<string[]>([]);
+  const [customInterests, setCustomInterests] = useState('');
   const [location, setLocation] = useState('');
   const [offeredSkills, setOfferedSkills] = useState<string[]>([]);
+  const [customOfferedSkills, setCustomOfferedSkills] = useState('');
   const [learningSkills, setLearningSkills] = useState<string[]>([]);
+  const [customLearningSkills, setCustomLearningSkills] = useState('');
   const [linkedinUsername, setLinkedinUsername] = useState('');
   const [instagramUsername, setInstagramUsername] = useState('');
   const [entrepreneurLevel, setEntrepreneurLevel] = useState<EntrepreneurLevel | null>(null);
@@ -75,10 +85,29 @@ export const ProfileScreen = () => {
       setFirstName(profile.firstName);
       setLastName(profile.lastName);
       setBio(profile.bio);
-      setInterests(profile.interests);
+
+      // Split saved interests into predefined pills vs free-form "Otras"
+      const interestList = parseCustomList(profile.interests || '');
+      const knownInterests = interestList.filter((i) => INTEREST_AREAS.includes(i));
+      const unknownInterests = interestList.filter((i) => !INTEREST_AREAS.includes(i));
+      setInterestPills(unknownInterests.length > 0 ? [...knownInterests, OTHER_OPTION] : knownInterests);
+      setCustomInterests(unknownInterests.join(', '));
+
       setLocation(profile.location);
-      setOfferedSkills(profile.offeredSkills.map((s) => s.name));
-      setLearningSkills(profile.learningSkills.map((s) => s.name));
+
+      // Split skills the same way: predefined options stay as pills,
+      // custom skills typed by the user go into the "Otras" text field.
+      const offered = profile.offeredSkills.map((s) => s.name);
+      const knownOffered = offered.filter((s) => SKILL_OPTIONS.includes(s));
+      const unknownOffered = offered.filter((s) => !SKILL_OPTIONS.includes(s));
+      setOfferedSkills(unknownOffered.length > 0 ? [...knownOffered, OTHER_OPTION] : knownOffered);
+      setCustomOfferedSkills(unknownOffered.join(', '));
+
+      const learning = profile.learningSkills.map((s) => s.name);
+      const knownLearning = learning.filter((s) => SKILL_OPTIONS.includes(s));
+      const unknownLearning = learning.filter((s) => !SKILL_OPTIONS.includes(s));
+      setLearningSkills(unknownLearning.length > 0 ? [...knownLearning, OTHER_OPTION] : knownLearning);
+      setCustomLearningSkills(unknownLearning.join(', '));
       setAvatarUrl(profile.avatarUrl ?? null);
       setLinkedinUsername(profile.linkedinUsername ?? '');
       setInstagramUsername(profile.instagramUsername ?? '');
@@ -136,18 +165,29 @@ export const ProfileScreen = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
+      // Combine selected pills (minus the "Otras" marker) with the custom
+      // values typed in each "Otras" input.
+      const buildList = (selected: string[], custom: string): { name: string }[] => {
+        const concrete = selected.filter((s) => s !== OTHER_OPTION);
+        const customs = parseCustomList(custom);
+        return [...concrete, ...customs].map((name) => ({ name }));
+      };
+      const interestsString = [
+        ...interestPills.filter((s) => s !== OTHER_OPTION),
+        ...parseCustomList(customInterests),
+      ].join(', ');
       const profile = await updateMyProfile({
         firstName,
         lastName,
         bio,
-        interests,
+        interests: interestsString,
         location,
         entrepreneurLevel,
         goal,
         linkedinUsername: linkedinUsername.trim() ? stripSocialHandle(linkedinUsername) : null,
         instagramUsername: instagramUsername.trim() ? stripSocialHandle(instagramUsername) : null,
-        offeredSkills: offeredSkills.map((name) => ({ name })),
-        learningSkills: learningSkills.map((name) => ({ name })),
+        offeredSkills: buildList(offeredSkills, customOfferedSkills),
+        learningSkills: buildList(learningSkills, customLearningSkills),
       });
       if (user) {
         updateUser({ ...user, firstName: profile.firstName, lastName: profile.lastName });
@@ -390,12 +430,34 @@ export const ProfileScreen = () => {
               multiline
               style={styles.textArea}
             />
-            <InputField
-              label="Intereses"
-              value={interests}
-              onChangeText={setInterests}
-              placeholder="Tecnología, SaaS, Marketing..."
-            />
+            <Text style={styles.editSectionLabel}>Áreas de interés</Text>
+            <View style={styles.skillPills}>
+              {INTEREST_AREAS.map((area) => {
+                const selected = interestPills.includes(area);
+                return (
+                  <TouchableOpacity
+                    key={`int-${area}`}
+                    style={[styles.skillPill, selected && styles.skillPillInterest]}
+                    onPress={() => setInterestPills((curr) => toggleArray(area, curr))}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.skillPillText, selected && styles.skillPillTextSelected]}>
+                      {area}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {interestPills.includes(OTHER_OPTION) && (
+              <TextInput
+                style={styles.customInput}
+                value={customInterests}
+                onChangeText={setCustomInterests}
+                placeholder="Escribe tus intereses (separados por coma)"
+                placeholderTextColor={colors.textMuted}
+              />
+            )}
+
             <InputField
               label="Ubicación"
               value={location}
@@ -423,6 +485,15 @@ export const ProfileScreen = () => {
                 );
               })}
             </View>
+            {offeredSkills.includes(OTHER_OPTION) && (
+              <TextInput
+                style={styles.customInput}
+                value={customOfferedSkills}
+                onChangeText={setCustomOfferedSkills}
+                placeholder="Escribe tus habilidades (separadas por coma)"
+                placeholderTextColor={colors.textMuted}
+              />
+            )}
 
             <Text style={styles.editSectionLabel}>Habilidades que buscas</Text>
             <Text style={styles.editHint}>
@@ -430,7 +501,7 @@ export const ProfileScreen = () => {
             </Text>
             <View style={styles.skillPills}>
               {SKILL_OPTIONS.map((skill) => {
-                const isOwn = offeredSkills.includes(skill);
+                const isOwn = offeredSkills.includes(skill) && skill !== OTHER_OPTION;
                 const isWant = learningSkills.includes(skill);
                 return (
                   <TouchableOpacity
@@ -457,6 +528,15 @@ export const ProfileScreen = () => {
                 );
               })}
             </View>
+            {learningSkills.includes(OTHER_OPTION) && (
+              <TextInput
+                style={styles.customInput}
+                value={customLearningSkills}
+                onChangeText={setCustomLearningSkills}
+                placeholder="Escribe lo que buscas (separado por comas)"
+                placeholderTextColor={colors.textMuted}
+              />
+            )}
 
             <Text style={styles.editSectionLabel}>Nivel emprendedor</Text>
             <View style={styles.optionRow}>
@@ -610,7 +690,7 @@ export const ProfileScreen = () => {
               Accede a conexiones ilimitadas, filtros avanzados y mucho más
             </Text>
             <TouchableOpacity style={styles.premiumBannerBtn} onPress={() => navigation.navigate('Pricing')}>
-              <Text style={styles.premiumBannerBtnText}>Ver planes desde 6€/mes</Text>
+              <Text style={styles.premiumBannerBtnText}>Ver planes desde 3,49 €/mes</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -813,6 +893,21 @@ const styles = StyleSheet.create({
   skillPillLearn: {
     borderColor: '#60A5FA',
     backgroundColor: '#60A5FA',
+  },
+  skillPillInterest: {
+    borderColor: '#A855F7',
+    backgroundColor: '#A855F7',
+  },
+  customInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.5)',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    color: colors.text,
+    fontSize: 14,
+    backgroundColor: 'rgba(74,222,128,0.08)',
+    marginTop: 4,
   },
   skillPillDisabled: {
     borderColor: colors.border,
