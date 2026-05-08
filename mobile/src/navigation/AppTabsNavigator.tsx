@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { AppState } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -27,10 +28,22 @@ export const AppTabsNavigator = () => {
         .catch(() => {});
     };
     load();
-    const interval = setInterval(load, 8000);
+    let interval: ReturnType<typeof setInterval> | null = setInterval(load, 8000);
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        if (!interval) {
+          interval = setInterval(load, 8000);
+          load();
+        }
+      } else if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    });
     return () => {
       cancelled = true;
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
+      sub.remove();
     };
   }, []);
 

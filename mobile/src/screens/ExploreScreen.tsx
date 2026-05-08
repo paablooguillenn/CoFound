@@ -6,6 +6,7 @@ import {
   Image,
   Modal,
   PanResponder,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -21,6 +22,7 @@ import * as Haptics from 'expo-haptics';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Avatar } from '../components/Avatar';
+import { CompatibilityDetailModal } from '../components/CompatibilityDetailModal';
 import { DiscoveryTutorial } from '../components/DiscoveryTutorial';
 import { LoadingDots } from '../components/LoadingDots';
 import { MatchNotification } from '../components/MatchNotification';
@@ -108,18 +110,77 @@ export const ExploreScreen = () => {
     })();
   }, []);
 
-  // Returns the names of skills the other person OFFERS that I want to learn,
-  // plus the skills the other LEARNS that I offer. These are the synergies.
-  const computeCommonSkills = useCallback((otherProfile: DiscoveryUser): string[] => {
-    const matches: string[] = [];
-    for (const s of otherProfile.offeredSkills) {
-      if (myLearnSkillsRef.current.has(s.name.toLowerCase())) matches.push(s.name);
-    }
-    for (const s of otherProfile.learningSkills) {
-      if (myOfferedSkillsRef.current.has(s.name.toLowerCase())) matches.push(s.name);
-    }
-    return Array.from(new Set(matches));
-  }, []);
+  // Returns the directional split of common skills:
+  //   iOfferTheySeek = skills I offer that the other person is looking for
+  //   theyOfferISeek = skills the other person offers that I want to learn
+  // Used both for the compatibility badge ("N sinergias") and the detail modal
+  // that opens on tap.
+  const computeDirectionalSkills = useCallback(
+    (otherProfile: DiscoveryUser): { iOfferTheySeek: string[]; theyOfferISeek: string[] } => {
+      const iOfferTheySeek: string[] = [];
+      const theyOfferISeek: string[] = [];
+      for (const s of otherProfile.learningSkills) {
+        if (myOfferedSkillsRef.current.has(s.name.toLowerCase())) iOfferTheySeek.push(s.name);
+      }
+      for (const s of otherProfile.offeredSkills) {
+        if (myLearnSkillsRef.current.has(s.name.toLowerCase())) theyOfferISeek.push(s.name);
+      }
+      return {
+        iOfferTheySeek: Array.from(new Set(iOfferTheySeek)),
+        theyOfferISeek: Array.from(new Set(theyOfferISeek)),
+      };
+    },
+    [],
+  );
+
+  // Backward-compatible flat list (used by match modal "Sinergia detectada").
+  const computeCommonSkills = useCallback(
+    (otherProfile: DiscoveryUser): string[] => {
+      const { iOfferTheySeek, theyOfferISeek } = computeDirectionalSkills(otherProfile);
+      return Array.from(new Set([...iOfferTheySeek, ...theyOfferISeek]));
+    },
+    [computeDirectionalSkills],
+  );
+
+  const [compatModalProfile, setCompatModalProfile] = useState<DiscoveryUser | null>(null);
+  const handleBadgePress = useCallback((p: DiscoveryUser) => setCompatModalProfile(p), []);
+
+  const handleProfileMore = useCallback((p: DiscoveryUser) => {
+    Alert.alert(
+      `${p.firstName} ${p.lastName}`,
+      'Acciones rápidas sobre este perfil',
+      [
+        {
+          text: 'Reportar perfil',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { reportUser } = await import('../services/api');
+              await reportUser(p.id, 'Reportado desde Discovery');
+              Alert.alert('Reporte enviado', 'Gracias por ayudar a mantener CoFound seguro.');
+            } catch {
+              /* noop */
+            }
+          },
+        },
+        {
+          text: 'Bloquear',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const { blockUser } = await import('../services/api');
+              await blockUser(p.id, 'Bloqueado desde Discovery');
+              Alert.alert('Usuario bloqueado', 'No volverás a ver su perfil.');
+              loadProfiles();
+            } catch {
+              /* noop */
+            }
+          },
+        },
+        { text: 'Cancelar', style: 'cancel' },
+      ],
+    );
+  }, [loadProfiles]);
 
   // Location filter (premium only)
   const [locations, setLocations] = useState<string[]>([]);
@@ -486,6 +547,14 @@ export const ExploreScreen = () => {
   return (
     <View style={styles.container}>
       <SuperLikeAnimation visible={showSuperBurst} onComplete={() => setShowSuperBurst(false)} />
+      {compatModalProfile && (
+        <CompatibilityDetailModal
+          visible={!!compatModalProfile}
+          score={compatModalProfile.compatibilityScore}
+          {...computeDirectionalSkills(compatModalProfile)}
+          onClose={() => setCompatModalProfile(null)}
+        />
+      )}
       {showTutorial && (
         <DiscoveryTutorial
           onFinish={() => {
@@ -529,7 +598,7 @@ export const ExploreScreen = () => {
               },
             ]}
           >
-            <CardContent profile={next} commonSkills={computeCommonSkills(next)} />
+            <CardContent profile={next} commonSkills={computeCommonSkills(next)} onBadgePress={handleBadgePress} onMorePress={handleProfileMore} />
           </Animated.View>
         )}
 
@@ -548,7 +617,7 @@ export const ExploreScreen = () => {
           ]}
           {...panResponder.panHandlers}
         >
-          <CardContent profile={current} commonSkills={computeCommonSkills(current)} />
+          <CardContent profile={current} commonSkills={computeCommonSkills(current)} onBadgePress={handleBadgePress} onMorePress={handleProfileMore} />
 
           {/* INTERESA stamp overlay (swipe right) */}
           <Animated.View style={[styles.stamp, styles.stampLike, { opacity: likeOpacity }]}>
@@ -783,12 +852,16 @@ export const ExploreScreen = () => {
 
 // ─── Card Content Component ───────────────────────────────────────────────────
 
-const CardContent = ({
+const CardContentInner = ({
   profile,
   commonSkills,
+  onBadgePress,
+  onMorePress,
 }: {
   profile: DiscoveryUser;
   commonSkills: string[];
+  onBadgePress?: (p: DiscoveryUser) => void;
+  onMorePress?: (p: DiscoveryUser) => void;
 }) => {
   const [expanded, setExpanded] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -863,6 +936,19 @@ const CardContent = ({
         </View>
       )}
 
+      {/* Overflow menu (top-right) — opens block / report sheet */}
+      {onMorePress && (
+        <Pressable
+          style={styles.moreBtn}
+          onPress={() => onMorePress(profile)}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Más opciones"
+        >
+          <Ionicons name="ellipsis-horizontal" size={20} color="#fff" />
+        </Pressable>
+      )}
+
       {/* Bottom gradient with profile info */}
       <LinearGradient
         colors={['transparent', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,0.92)']}
@@ -870,15 +956,22 @@ const CardContent = ({
         style={styles.bottomOverlay}
         pointerEvents="box-none"
       >
-        {/* Compatibility badge with synergy count */}
+        {/* Compatibility badge with synergy count — tap to see the breakdown */}
         {profile.compatibilityScore > 0 && (
-          <View style={styles.compatBadge}>
+          <TouchableOpacity
+            style={styles.compatBadge}
+            onPress={() => onBadgePress?.(profile)}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Ver detalle de compatibilidad"
+          >
             <Ionicons name="sparkles" size={12} color="#4ADE80" />
             <Text style={styles.compatText}>
               {profile.compatibilityScore}% compatible
               {commonSkills.length > 0 && ` · ${commonSkills.length} ${commonSkills.length === 1 ? 'sinergia' : 'sinergias'}`}
             </Text>
-          </View>
+            <Ionicons name="chevron-forward" size={11} color="#4ADE80" />
+          </TouchableOpacity>
         )}
 
         <Text style={styles.fullName}>
@@ -976,6 +1069,19 @@ const CardContent = ({
     </View>
   );
 };
+
+// Skip re-renders when neither the profile id nor the common-skills hash
+// changed. Each swipe was rebuilding the next card from scratch even when its
+// underlying data was identical, costing 8-10 ms per gesture frame.
+const CardContent = React.memo(
+  CardContentInner,
+  (prev, next) =>
+    prev.profile.id === next.profile.id &&
+    prev.commonSkills.length === next.commonSkills.length &&
+    prev.commonSkills.every((s, i) => s === next.commonSkills[i]) &&
+    prev.onBadgePress === next.onBadgePress &&
+    prev.onMorePress === next.onMorePress,
+);
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 
@@ -1114,6 +1220,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 6,
+  },
+  moreBtn: {
+    position: 'absolute',
+    top: 100,
+    right: 14,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 13,
   },
   boostBadgeText: {
     color: '#fff',

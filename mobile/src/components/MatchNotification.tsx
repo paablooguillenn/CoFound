@@ -1,10 +1,94 @@
-import React, { useEffect, useRef } from 'react';
-import { Animated, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { Animated, Dimensions, Easing, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from './Avatar';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
+
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const CONFETTI_COUNT = 24;
+
+/** Subtle confetti burst that explodes from the centre when the modal opens. */
+const ConfettiBurst = ({ accent }: { accent: string }) => {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: CONFETTI_COUNT }, (_, i) => ({
+        progress: new Animated.Value(0),
+        angle: (i / CONFETTI_COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.4,
+        distance: 180 + Math.random() * 140,
+        size: 6 + Math.random() * 8,
+        color: i % 3 === 0 ? '#C9A84C' : accent,
+      })),
+    [accent],
+  );
+
+  useEffect(() => {
+    Animated.stagger(
+      18,
+      pieces.map((p) =>
+        Animated.timing(p.progress, {
+          toValue: 1,
+          duration: 1100 + Math.random() * 400,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ),
+    ).start();
+  }, [pieces]);
+
+  return (
+    <View pointerEvents="none" style={confettiStyles.container}>
+      {pieces.map((p, i) => {
+        const tx = p.progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.cos(p.angle) * p.distance],
+        });
+        const ty = p.progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, Math.sin(p.angle) * p.distance],
+        });
+        const opacity = p.progress.interpolate({
+          inputRange: [0, 0.7, 1],
+          outputRange: [0, 1, 0],
+        });
+        const rotate = p.progress.interpolate({
+          inputRange: [0, 1],
+          outputRange: ['0deg', `${(i % 2 ? 1 : -1) * 360}deg`],
+        });
+        return (
+          <Animated.View
+            key={i}
+            style={[
+              confettiStyles.piece,
+              {
+                width: p.size,
+                height: p.size * 0.4,
+                backgroundColor: p.color,
+                opacity,
+                transform: [{ translateX: tx }, { translateY: ty }, { rotate }],
+              },
+            ]}
+          />
+        );
+      })}
+    </View>
+  );
+};
+
+const confettiStyles = StyleSheet.create({
+  container: {
+    position: 'absolute',
+    top: SCREEN_HEIGHT / 2 - 40,
+    left: SCREEN_WIDTH / 2 - 6,
+    width: 12,
+    height: 12,
+  },
+  piece: {
+    position: 'absolute',
+    borderRadius: 2,
+  },
+});
 
 type Props = {
   visible: boolean;
@@ -90,6 +174,7 @@ export const MatchNotification = ({
   return (
     <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose}>
       <View style={styles.container}>
+        <ConfettiBurst accent={accent} />
         {/* Handshake / rocket icon — professional, not romantic */}
         <Animated.View
           style={[

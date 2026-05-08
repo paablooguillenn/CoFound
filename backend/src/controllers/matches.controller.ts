@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from 'express';
 import { z } from 'zod';
 
-import { getMatches, likeUser, passUser, superLikeUser, unmatchUser, blockUser, getMatchProfile, reportUser, getUnreadTotal, rewindLastSwipe, getLikesReceived, getBlockedUsers, unblockUser, getLatestUnreadMessage } from '../services/match.service';
+import { getMatches, likeUser, passUser, superLikeUser, unmatchUser, blockUser, getMatchProfile, reportUser, getUnreadTotal, rewindLastSwipe, getLikesReceived, getBlockedUsers, unblockUser, getLatestUnreadMessage, getLikesSent, getProfileVisitors } from '../services/match.service';
 
 const likeSchema = z.object({
   targetUserId: z.string().uuid(),
@@ -113,6 +113,32 @@ export const latestUnreadController = async (request: Request, response: Respons
   try {
     const message = await getLatestUnreadMessage(request.user!.id);
     response.json({ message });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const likesSentController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const likes = await getLikesSent(request.user!.id);
+    response.json({ likes });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const profileVisitorsController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    // Premium gate is applied here instead of the service so the service is reusable.
+    const { pool } = await import('../config/database');
+    const me = await pool.query<{ is_premium: boolean }>('SELECT is_premium FROM users WHERE id = $1', [
+      request.user!.id,
+    ]);
+    if (!me.rowCount || !me.rows[0].is_premium) {
+      return response.status(403).json({ message: 'Esta función es exclusiva para Premium' });
+    }
+    const visitors = await getProfileVisitors(request.user!.id);
+    response.json({ visitors });
   } catch (error) {
     next(error);
   }

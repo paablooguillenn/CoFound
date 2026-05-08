@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -228,16 +229,28 @@ export const ProfileScreen = () => {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
-      base64: true,
+      quality: 1,
       allowsEditing: true,
       aspect: [3, 4],
     });
 
-    if (result.canceled || !result.assets[0].base64) return;
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    if (!asset.uri) return;
+
+    // Compress + resize before upload to reduce payload from ~1.5 MB to ~250 KB.
+    // The backend stores photos as base64 in Postgres so every byte saved is a
+    // direct hit on DB size and discovery feed payloads.
+    const compressed = await ImageManipulator.manipulateAsync(
+      asset.uri,
+      [{ resize: { width: 1080 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+    );
+
+    if (!compressed.base64) return;
 
     try {
-      const dataUri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      const dataUri = `data:image/jpeg;base64,${compressed.base64}`;
       await addPhoto(dataUri);
       await loadPhotos();
       // Update avatar if it's the first photo
@@ -643,6 +656,16 @@ export const ProfileScreen = () => {
 
         {/* Menú de opciones */}
         <View style={styles.menuCard}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('MyActivity')}
+            accessibilityRole="button"
+            accessibilityLabel="Mi actividad"
+          >
+            <Ionicons name="paper-plane-outline" size={18} color="#60A5FA" />
+            <Text style={styles.menuItemText}>Mi actividad</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => {

@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
+import * as ImageManipulator from 'expo-image-manipulator';
 
 import { useAuth } from '../context/AuthContext';
 import { updateMyProfile } from '../services/profile.service';
@@ -110,15 +111,20 @@ export const CreateProfileScreen = () => {
     }
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.7,
-      base64: true,
+      quality: 1,
       allowsEditing: true,
       aspect: [3, 4],
     });
-    if (result.canceled || !result.assets[0].base64) return;
+    if (result.canceled || !result.assets[0].uri) return;
+    const compressed = await ImageManipulator.manipulateAsync(
+      result.assets[0].uri,
+      [{ resize: { width: 1080 } }],
+      { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG, base64: true },
+    );
+    if (!compressed.base64) return;
     try {
       setUploadingPhoto(true);
-      const dataUri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      const dataUri = `data:image/jpeg;base64,${compressed.base64}`;
       await addPhoto(dataUri);
       await loadPhotos();
     } catch (err: any) {

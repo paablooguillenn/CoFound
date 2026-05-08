@@ -11,6 +11,7 @@ type ProfileUpdateInput = {
   location?: string;
   entrepreneurLevel?: 'principiante' | 'intermedio' | 'avanzado' | null;
   goal?: 'learn_skill' | 'find_partner' | 'networking' | null;
+  projectStage?: 'idea' | 'mvp' | 'invoicing' | 'pivot' | null;
   linkedinUsername?: string | null;
   instagramUsername?: string | null;
   offeredSkills: Array<{ name: string; level?: number }>;
@@ -50,6 +51,7 @@ export const getProfileById = async (userId: string) => {
     location: string | null;
     entrepreneur_level: string | null;
     goal: string | null;
+    project_stage: string | null;
     linkedin_username: string | null;
     instagram_username: string | null;
     is_premium: boolean;
@@ -61,7 +63,7 @@ export const getProfileById = async (userId: string) => {
     boost_until: Date | null;
   }>(
     `SELECT id, email, first_name, last_name, bio, avatar_url, interests, location,
-            entrepreneur_level, goal, linkedin_username, instagram_username,
+            entrepreneur_level, goal, project_stage, linkedin_username, instagram_username,
             is_premium, premium_plan, premium_since, preferences, two_factor_enabled,
             email_verified, boost_until
      FROM users
@@ -87,6 +89,7 @@ export const getProfileById = async (userId: string) => {
     location: user.location ?? '',
     entrepreneurLevel: user.entrepreneur_level ?? null,
     goal: user.goal ?? null,
+    projectStage: user.project_stage ?? null,
     linkedinUsername: user.linkedin_username ?? null,
     instagramUsername: user.instagram_username ?? null,
     isPremium: user.is_premium ?? false,
@@ -396,6 +399,7 @@ export const updateProfile = async (userId: string, input: ProfileUpdateInput) =
       location: string | null;
       entrepreneur_level: string | null;
       goal: string | null;
+      project_stage: string | null;
       linkedin_username: string | null;
       instagram_username: string | null;
     }>(
@@ -407,12 +411,13 @@ export const updateProfile = async (userId: string, input: ProfileUpdateInput) =
            location = $6,
            entrepreneur_level = $7,
            goal = $8,
-           linkedin_username = $9,
-           instagram_username = $10,
+           project_stage = $9,
+           linkedin_username = $10,
+           instagram_username = $11,
            updated_at = NOW()
        WHERE id = $1
        RETURNING id, email, first_name, last_name, bio, avatar_url, interests, location,
-                 entrepreneur_level, goal, linkedin_username, instagram_username`,
+                 entrepreneur_level, goal, project_stage, linkedin_username, instagram_username`,
       [
         userId,
         input.firstName.trim(),
@@ -422,6 +427,7 @@ export const updateProfile = async (userId: string, input: ProfileUpdateInput) =
         input.location?.trim() || null,
         input.entrepreneurLevel ?? null,
         input.goal ?? null,
+        input.projectStage ?? null,
         normalizeSocialHandle(input.linkedinUsername),
         normalizeSocialHandle(input.instagramUsername),
       ],
@@ -448,6 +454,7 @@ export const updateProfile = async (userId: string, input: ProfileUpdateInput) =
       location: user.location ?? '',
       entrepreneurLevel: user.entrepreneur_level ?? null,
       goal: user.goal ?? null,
+      projectStage: user.project_stage ?? null,
       linkedinUsername: user.linkedin_username ?? null,
       instagramUsername: user.instagram_username ?? null,
       ...skills,

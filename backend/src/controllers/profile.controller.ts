@@ -34,6 +34,7 @@ const updateProfileSchema = z.object({
   location: z.string().optional().default(''),
   entrepreneurLevel: z.enum(['principiante', 'intermedio', 'avanzado']).nullable().optional(),
   goal: z.enum(['learn_skill', 'find_partner', 'networking']).nullable().optional(),
+  projectStage: z.enum(['idea', 'mvp', 'invoicing', 'pivot']).nullable().optional(),
   linkedinUsername: z.string().max(120).nullable().optional(),
   instagramUsername: z.string().max(120).nullable().optional(),
   offeredSkills: z.array(skillSchema).default([]),

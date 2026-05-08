@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { NavigationContainerRefWithCurrent, NavigationState } from '@react-navigation/native';
 
 import { InAppMessageBanner } from './InAppMessageBanner';
@@ -66,19 +67,33 @@ export const InAppNotificationProvider = ({
     }
 
     tick.current();
-    const interval = setInterval(() => tick.current(), POLL_INTERVAL_MS);
+    let interval: ReturnType<typeof setInterval> | null = setInterval(
+      () => tick.current(),
+      POLL_INTERVAL_MS,
+    );
 
-    // Poll on every navigation state change. Two reasons:
-    //   1. Leaving a chat → instant banner if a new message arrived while
-    //      we were inside (mark-as-read happens on chat mount, so anything
-    //      that arrived after that still counts as unread).
-    //   2. App resume / deep link / etc. — any nav transition gets a fresh check.
+    // Pause polling while the app is in background to save battery + data.
+    // Resume + tick immediately when the user brings the app forward again.
+    const appStateSub = AppState.addEventListener('change', (next) => {
+      if (next === 'active') {
+        if (!interval) {
+          interval = setInterval(() => tick.current(), POLL_INTERVAL_MS);
+          tick.current(); // fresh check on resume
+        }
+      } else if (interval) {
+        clearInterval(interval);
+        interval = null;
+      }
+    });
+
+    // Poll on every navigation state change.
     const unsubscribe = navigationRef.addListener('state', () => {
       tick.current();
     });
 
     return () => {
-      clearInterval(interval);
+      if (interval) clearInterval(interval);
+      appStateSub.remove();
       unsubscribe();
     };
   }, [token, navigationRef]);

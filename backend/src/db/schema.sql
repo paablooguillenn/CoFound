@@ -41,6 +41,24 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS goal VARCHAR(20);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS linkedin_username VARCHAR(120);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_username VARCHAR(120);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_mentor BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS project_stage VARCHAR(20);
+
+-- Profile views (premium feature: see who visited your profile).
+CREATE TABLE IF NOT EXISTS profile_views (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  viewer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  viewed_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  viewed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  UNIQUE (viewer_id, viewed_id, viewed_at)
+);
+CREATE INDEX IF NOT EXISTS idx_profile_views_viewed ON profile_views(viewed_id, viewed_at DESC);
+CREATE INDEX IF NOT EXISTS idx_profile_views_viewer ON profile_views(viewer_id, viewed_at DESC);
+
+-- O4: Performance indexes for hot query paths.
+CREATE INDEX IF NOT EXISTS idx_messages_match_created ON messages(match_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_likes_receiver ON user_likes(receiver_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_matches_users ON matches(user_a_id, user_b_id);
+CREATE INDEX IF NOT EXISTS idx_user_passes_sender ON user_passes(sender_id, created_at);
 
 -- Support / contact messages sent to the team from inside the app.
 CREATE TABLE IF NOT EXISTS support_messages (

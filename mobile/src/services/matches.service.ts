@@ -48,6 +48,37 @@ export const getLikesReceived = async () => {
   return response.data.likes;
 };
 
+export type LikeSent = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+  bio: string;
+  location: string;
+  isSuper: boolean;
+  likedAt: string;
+};
+
+export const getLikesSent = async () => {
+  const response = await api.get<{ likes: LikeSent[] }>('/matches/likes-sent');
+  return response.data.likes;
+};
+
+export type ProfileVisitor = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  avatarUrl: string | null;
+  location: string;
+  lastViewAt: string;
+  viewCount: number;
+};
+
+export const getProfileVisitors = async () => {
+  const response = await api.get<{ visitors: ProfileVisitor[] }>('/matches/profile-visitors');
+  return response.data.visitors;
+};
+
 export type BlockedUser = {
   id: string;
   firstName: string;

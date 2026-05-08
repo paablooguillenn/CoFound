@@ -21,18 +21,41 @@ export const setOnUnauthorized = (handler: (() => void) | null) => {
   onUnauthorized = handler;
 };
 
+// Retry GET requests up to 2 times on transient network errors with a small
+// exponential backoff. Avoids retrying on auth failures, validation errors and
+// any non-idempotent verb (POST/PATCH/DELETE).
+const MAX_RETRIES = 2;
+const isTransientError = (error: any): boolean => {
+  // Network failure (no response from server)
+  if (!error.response) return true;
+  // 5xx from server
+  if (error.response.status >= 500 && error.response.status < 600) return true;
+  return false;
+};
+
 api.interceptors.response.use(
   (response) => {
     console.log(`[CoFound] Response ${response.status}`);
     return response;
   },
-  (error) => {
+  async (error) => {
     console.log('[CoFound] API Error:', error.message, error.code, error.config?.url);
     if (error.response?.status === 401) {
       const url = error.config?.url ?? '';
       const isAuthFlow = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password');
       if (!isAuthFlow && onUnauthorized) {
         onUnauthorized();
+      }
+    }
+    // Auto-retry idempotent transient failures.
+    const cfg = error.config;
+    if (cfg && cfg.method?.toLowerCase() === 'get' && isTransientError(error)) {
+      cfg.__retryCount = (cfg.__retryCount ?? 0) + 1;
+      if (cfg.__retryCount <= MAX_RETRIES) {
+        const delayMs = 300 * 2 ** (cfg.__retryCount - 1); // 300ms, 600ms
+        console.log(`[CoFound] Retrying ${cfg.url} (attempt ${cfg.__retryCount}/${MAX_RETRIES}) in ${delayMs}ms`);
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        return api(cfg);
       }
     }
     return Promise.reject(error);

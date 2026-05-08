@@ -569,6 +569,108 @@ export const getMatches = async (currentUserId: string) => {
 };
 
 /**
+ * Returns the list of pending likes sent by the current user — i.e. profiles
+ * I expressed interest in but haven't matched with yet (no reciprocal like).
+ * Powers the "Mi actividad" screen.
+ */
+export const getLikesSent = async (currentUserId: string) => {
+  const result = await pool.query<{
+    id: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+    bio: string | null;
+    location: string | null;
+    is_super: boolean;
+    liked_at: Date;
+  }>(
+    `SELECT u.id, u.first_name, u.last_name, u.avatar_url, u.bio, u.location,
+            ul.is_super, ul.created_at AS liked_at
+     FROM user_likes ul
+     INNER JOIN users u ON u.id = ul.receiver_id
+     WHERE ul.sender_id = $1
+       AND u.deactivated_at IS NULL
+       -- Exclude already-matched profiles (those already responded mutually)
+       AND NOT EXISTS (
+         SELECT 1 FROM matches m
+         WHERE (m.user_a_id = ul.sender_id AND m.user_b_id = ul.receiver_id)
+            OR (m.user_b_id = ul.sender_id AND m.user_a_id = ul.receiver_id)
+       )
+     ORDER BY ul.created_at DESC
+     LIMIT 100`,
+    [currentUserId],
+  );
+  return result.rows.map((row) => ({
+    id: row.id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    avatarUrl: row.avatar_url,
+    bio: row.bio ?? '',
+    location: row.location ?? '',
+    isSuper: row.is_super,
+    likedAt: row.liked_at,
+  }));
+};
+
+/**
+ * Records that `viewerId` opened the public profile of `viewedId`. Skips
+ * self-views silently. Uses the `profile_views` table created in schema.sql.
+ * Failures are not propagated — viewing a profile must always succeed even
+ * if the analytics insert fails.
+ */
+export const recordProfileView = async (viewerId: string, viewedId: string): Promise<void> => {
+  if (viewerId === viewedId) return;
+  try {
+    await pool.query(
+      `INSERT INTO profile_views (viewer_id, viewed_id) VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [viewerId, viewedId],
+    );
+  } catch (err: any) {
+    console.warn('[profile-views] failed to record view:', err.message);
+  }
+};
+
+/**
+ * Returns the recent visitors to the current user's profile. Premium gate
+ * is applied at the controller level; this service just returns the data.
+ */
+export const getProfileVisitors = async (currentUserId: string, limitDays = 30) => {
+  const result = await pool.query<{
+    viewer_id: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+    location: string | null;
+    last_view: Date;
+    view_count: string;
+  }>(
+    `SELECT v.viewer_id,
+            u.first_name, u.last_name, u.avatar_url, u.location,
+            MAX(v.viewed_at) AS last_view,
+            count(*)::text AS view_count
+     FROM profile_views v
+     INNER JOIN users u ON u.id = v.viewer_id
+     WHERE v.viewed_id = $1
+       AND v.viewed_at >= NOW() - $2::int * INTERVAL '1 day'
+       AND u.deactivated_at IS NULL
+     GROUP BY v.viewer_id, u.first_name, u.last_name, u.avatar_url, u.location
+     ORDER BY last_view DESC
+     LIMIT 50`,
+    [currentUserId, limitDays],
+  );
+  return result.rows.map((row) => ({
+    id: row.viewer_id,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    avatarUrl: row.avatar_url,
+    location: row.location ?? '',
+    lastViewAt: row.last_view,
+    viewCount: Number(row.view_count),
+  }));
+};
+
+/**
  * Returns the most recent unread message received by the current user, or null.
  * Used by the mobile client to show an in-app banner notification when a new
  * message arrives while the user is on a different screen.
