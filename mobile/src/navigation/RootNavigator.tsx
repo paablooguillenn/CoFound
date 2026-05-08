@@ -26,6 +26,9 @@ import { SupportScreen } from '../screens/SupportScreen';
 import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { MyActivityScreen } from '../screens/MyActivityScreen';
 import { ProfileVisitorsScreen } from '../screens/ProfileVisitorsScreen';
+import { EventsScreen } from '../screens/EventsScreen';
+import { EventDetailScreen } from '../screens/EventDetailScreen';
+import { CreateEventScreen } from '../screens/CreateEventScreen';
 import { AppTabsNavigator } from './AppTabsNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import { AppStackParamList } from '../types/navigation';
@@ -53,6 +56,9 @@ const AppStackNavigator = ({ initialRouteName }: { initialRouteName: keyof AppSt
     <Stack.Screen name="UserProfile" component={UserProfileScreen} />
     <Stack.Screen name="MyActivity" component={MyActivityScreen} />
     <Stack.Screen name="ProfileVisitors" component={ProfileVisitorsScreen} />
+    <Stack.Screen name="Events" component={EventsScreen} />
+    <Stack.Screen name="EventDetail" component={EventDetailScreen} />
+    <Stack.Screen name="CreateEvent" component={CreateEventScreen} />
   </Stack.Navigator>
 );
 

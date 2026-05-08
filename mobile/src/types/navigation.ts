@@ -32,4 +32,7 @@ export type AppStackParamList = {
   UserProfile: { userId: string; preview?: { firstName: string; lastName: string; avatarUrl?: string | null } };
   MyActivity: undefined;
   ProfileVisitors: undefined;
+  Events: undefined;
+  EventDetail: { eventId: string };
+  CreateEvent: { eventId?: string } | undefined;
 };

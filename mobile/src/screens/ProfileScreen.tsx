@@ -751,6 +751,16 @@ export const ProfileScreen = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}
+            onPress={() => navigation.navigate('Events')}
+            accessibilityRole="button"
+            accessibilityLabel="Eventos"
+          >
+            <Ionicons name="calendar-outline" size={18} color="#7C3AED" />
+            <Text style={styles.menuItemText}>Eventos</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={() => navigation.navigate('ProfileVisitors')}
             accessibilityRole="button"
             accessibilityLabel="Te han visitado"

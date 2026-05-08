@@ -5,6 +5,7 @@ import { authMiddleware } from '../middleware/auth.middleware';
 import { adminRouter } from './admin.routes';
 import { authRouter } from './auth.routes';
 import { discoveryRouter } from './discovery.routes';
+import { eventsRouter } from './events.routes';
 import { matchesRouter } from './matches.routes';
 import { profileRouter } from './profile.routes';
 import { getMyPhotosController, addPhotoController, deletePhotoController, reorderPhotosController } from '../controllers/photos.controller';
@@ -17,6 +18,7 @@ apiRouter.use('/auth', authRouter);
 apiRouter.use('/profile', authMiddleware, profileRouter);
 apiRouter.use('/discovery', authMiddleware, discoveryRouter);
 apiRouter.use('/matches', authMiddleware, matchesRouter);
+apiRouter.use('/events', authMiddleware, eventsRouter);
 apiRouter.use('/admin', authMiddleware, adminMiddleware, adminRouter);
 
 // Public user profile (auth required, returns full profile of any non-blocked user)
