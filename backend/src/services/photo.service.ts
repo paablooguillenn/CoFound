@@ -52,6 +52,60 @@ export const addUserPhoto = async (userId: string, url: string) => {
   return result.rows[0];
 };
 
+/**
+ * Reorders the user's photos according to the given list of photo IDs.
+ * The first ID becomes sort_order=0 (the user's avatar). Photos owned by the
+ * user but missing from the list are appended in their existing order.
+ */
+export const reorderUserPhotos = async (userId: string, orderedIds: string[]) => {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const owned = await client.query<{ id: string; sort_order: number }>(
+      'SELECT id, sort_order FROM user_photos WHERE user_id = $1 ORDER BY sort_order',
+      [userId],
+    );
+    const ownedIds = new Set(owned.rows.map((r) => r.id));
+
+    // Filter to only photos the user owns, preserving caller's order, then
+    // append any owned photos the caller forgot (defensive — shouldn't happen
+    // in the normal UI flow).
+    const cleaned = orderedIds.filter((id) => ownedIds.has(id));
+    const tail = owned.rows
+      .map((r) => r.id)
+      .filter((id) => !cleaned.includes(id));
+    const finalOrder = [...cleaned, ...tail];
+
+    for (let i = 0; i < finalOrder.length; i += 1) {
+      await client.query(
+        'UPDATE user_photos SET sort_order = $1 WHERE id = $2 AND user_id = $3',
+        [i, finalOrder[i], userId],
+      );
+    }
+
+    // The first photo also doubles as the user's avatar.
+    if (finalOrder.length > 0) {
+      const firstUrl = await client.query<{ url: string }>(
+        'SELECT url FROM user_photos WHERE id = $1',
+        [finalOrder[0]],
+      );
+      await client.query(
+        'UPDATE users SET avatar_url = $1 WHERE id = $2',
+        [firstUrl.rows[0]?.url ?? null, userId],
+      );
+    }
+
+    await client.query('COMMIT');
+    return { success: true, order: finalOrder };
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+};
+
 export const deleteUserPhoto = async (userId: string, photoId: string) => {
   const result = await pool.query(
     `DELETE FROM user_photos WHERE id = $1 AND user_id = $2 RETURNING sort_order`,

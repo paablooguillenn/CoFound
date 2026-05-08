@@ -28,7 +28,7 @@ import { SkillBadge } from '../components/SkillBadge';
 import { SocialLinks, stripSocialHandle } from '../components/SocialLinks';
 import { useAuth } from '../context/AuthContext';
 import { activateBoostRequest, getBoostStatusRequest, getCompleteness, getMyProfile, updateMyProfile, requestEmailVerificationCode, BoostStatus, Completeness } from '../services/profile.service';
-import { getMyPhotos, addPhoto, deletePhoto } from '../services/api';
+import { getMyPhotos, addPhoto, deletePhoto, reorderPhotos } from '../services/api';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { EntrepreneurLevel, Goal, ProjectStage, Skill } from '../types/models';
@@ -118,9 +118,9 @@ export const ProfileScreen = () => {
       setInstagramUsername(profile.instagramUsername ?? '');
       setEntrepreneurLevel(profile.entrepreneurLevel ?? null);
       setGoal(profile.goal ?? null);
-      setProjectStage((profile as any).projectStage ?? null);
-      setIsMentor((profile as any).isMentor ?? false);
-      setEmailVerified((profile as any).emailVerified ?? true);
+      setProjectStage(profile.projectStage ?? null);
+      setIsMentor(profile.isMentor ?? false);
+      setEmailVerified(profile.emailVerified ?? true);
       setProfileData({
         bio: profile.bio,
         interests: profile.interests,
@@ -292,6 +292,26 @@ export const ProfileScreen = () => {
     ]);
   };
 
+  const handleReorderPhoto = async (index: number, direction: -1 | 1) => {
+    const target = index + direction;
+    if (target < 0 || target >= photos.length) return;
+    // Optimistic swap so the UI feels instant.
+    const next = [...photos];
+    [next[index], next[target]] = [next[target], next[index]];
+    next.forEach((p, i) => {
+      p.sort_order = i;
+    });
+    setPhotos(next);
+    if (next[0]) setAvatarUrl(next[0].url);
+    try {
+      await reorderPhotos(next.map((p) => p.id));
+    } catch {
+      // Rollback by reloading from server on failure.
+      await loadPhotos();
+      Alert.alert('Error', 'No se pudo reordenar.');
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -421,6 +441,26 @@ export const ProfileScreen = () => {
                   >
                     <Ionicons name="close-circle" size={24} color={colors.danger} />
                   </TouchableOpacity>
+                )}
+                {editing && (
+                  <View style={styles.photoReorderRow} pointerEvents="box-none">
+                    <TouchableOpacity
+                      disabled={idx === 0}
+                      style={[styles.photoArrowBtn, idx === 0 && styles.photoArrowBtnDisabled]}
+                      onPress={() => handleReorderPhoto(idx, -1)}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Ionicons name="chevron-back" size={16} color={idx === 0 ? colors.textMuted : '#fff'} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      disabled={idx === photos.length - 1}
+                      style={[styles.photoArrowBtn, idx === photos.length - 1 && styles.photoArrowBtnDisabled]}
+                      onPress={() => handleReorderPhoto(idx, 1)}
+                      hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                    >
+                      <Ionicons name="chevron-forward" size={16} color={idx === photos.length - 1 ? colors.textMuted : '#fff'} />
+                    </TouchableOpacity>
+                  </View>
                 )}
                 {photo.sort_order === 0 && (
                   <View style={styles.photoMainBadge}>
@@ -1214,6 +1254,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 8,
+  },
+  photoReorderRow: {
+    position: 'absolute',
+    bottom: 6,
+    right: 6,
+    flexDirection: 'row',
+    gap: 4,
+  },
+  photoArrowBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  photoArrowBtnDisabled: {
+    backgroundColor: 'rgba(0,0,0,0.3)',
   },
   photoMainText: {
     color: colors.white,

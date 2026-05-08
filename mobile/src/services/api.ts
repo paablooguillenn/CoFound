@@ -139,6 +139,9 @@ export const addPhoto = (url: string) =>
 export const deletePhoto = (photoId: string) =>
   api.delete(`/photos/${photoId}`).then((r) => r.data);
 
+export const reorderPhotos = (orderedIds: string[]) =>
+  api.post('/photos/reorder', { order: orderedIds }).then((r) => r.data);
+
 // --- Premium ---
 export const upgradePremium = (plan: 'monthly' | 'yearly') =>
   api.post('/profile/premium', { plan }).then((r) => r.data);

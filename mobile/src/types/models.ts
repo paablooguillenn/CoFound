@@ -23,6 +23,8 @@ export type UserProfile = {
   isMentor?: boolean;
   linkedinUsername?: string | null;
   instagramUsername?: string | null;
+  emailVerified?: boolean;
+  isPremium?: boolean;
   offeredSkills: Skill[];
   learningSkills: Skill[];
 };
