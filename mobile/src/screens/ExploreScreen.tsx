@@ -3,6 +3,7 @@ import {
   Alert,
   Animated,
   Dimensions,
+  FlatList,
   Image,
   Modal,
   PanResponder,
@@ -62,6 +63,24 @@ export const ExploreScreen = () => {
   const [showSuperLimitModal, setShowSuperLimitModal] = useState(false);
   const [showSuperBurst, setShowSuperBurst] = useState(false);
   const [showTutorial, setShowTutorial] = useState(false);
+  const [viewMode, setViewMode] = useState<'swipe' | 'list'>('swipe');
+  // IDs the user has acted on while in list mode. Kept local so the swipe
+  // deck's currentIndex isn't perturbed if the user toggles back.
+  const [actedIds, setActedIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    AsyncStorage.getItem('cofound:exploreViewMode').then((v) => {
+      if (v === 'list' || v === 'swipe') setViewMode(v);
+    });
+  }, []);
+
+  const toggleViewMode = useCallback(() => {
+    setViewMode((curr) => {
+      const next = curr === 'swipe' ? 'list' : 'swipe';
+      AsyncStorage.setItem('cofound:exploreViewMode', next).catch(() => {});
+      return next;
+    });
+  }, []);
 
   useEffect(() => {
     AsyncStorage.getItem('cofound:discoveryTutorialSeen').then((v) => {
@@ -387,6 +406,26 @@ export const ExploreScreen = () => {
     });
   };
 
+  // List-mode action handlers. Hide the profile from the visible list and
+  // delegate persistence to the same fire-and-forget helpers as the deck.
+  const handleListLike = (profile: DiscoveryUser) => {
+    setActedIds((prev) => {
+      const next = new Set(prev);
+      next.add(profile.id);
+      return next;
+    });
+    handleLikeInBackground(profile);
+  };
+
+  const handleListPass = (profile: DiscoveryUser) => {
+    setActedIds((prev) => {
+      const next = new Set(prev);
+      next.add(profile.id);
+      return next;
+    });
+    handlePassInBackground(profile);
+  };
+
   const doSwipeRef = useRef((_direction: 'left' | 'right') => {});
   doSwipeRef.current = (direction: 'left' | 'right') => {
     const profile = profilesRef.current[currentIndexRef.current];
@@ -494,7 +533,20 @@ export const ExploreScreen = () => {
         <View style={styles.header}>
           <View style={styles.headerLeft} />
           <Text style={styles.headerTitle}>CoFound</Text>
-          <View style={styles.headerRight} />
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.filterBtn}
+              onPress={toggleViewMode}
+              accessibilityRole="button"
+              accessibilityLabel={viewMode === 'swipe' ? 'Ver como lista' : 'Ver como tarjetas'}
+            >
+              <Ionicons
+                name={viewMode === 'swipe' ? 'list' : 'albums'}
+                size={20}
+                color={colors.white}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.center}>
           <Animated.View style={styles.loadingDots}>
@@ -512,7 +564,20 @@ export const ExploreScreen = () => {
         <View style={styles.header}>
           <View style={styles.headerLeft} />
           <Text style={styles.headerTitle}>CoFound</Text>
-          <View style={styles.headerRight} />
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.filterBtn}
+              onPress={toggleViewMode}
+              accessibilityRole="button"
+              accessibilityLabel={viewMode === 'swipe' ? 'Ver como lista' : 'Ver como tarjetas'}
+            >
+              <Ionicons
+                name={viewMode === 'swipe' ? 'list' : 'albums'}
+                size={20}
+                color={colors.white}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.center}>
           <View style={styles.emptyIconCircle}>
@@ -588,11 +653,25 @@ export const ExploreScreen = () => {
             </TouchableOpacity>
           </View>
           <Text style={styles.headerTitle}>CoFound</Text>
-          <View style={styles.headerRight} />
+          <View style={styles.headerRight}>
+            <TouchableOpacity
+              style={styles.filterBtn}
+              onPress={toggleViewMode}
+              accessibilityRole="button"
+              accessibilityLabel={viewMode === 'swipe' ? 'Ver como lista' : 'Ver como tarjetas'}
+            >
+              <Ionicons
+                name={viewMode === 'swipe' ? 'list' : 'albums'}
+                size={20}
+                color={colors.white}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
 
-      {/* Cards Stack */}
+      {/* Cards Stack — only rendered in swipe mode */}
+      {viewMode === 'swipe' && (
       <View style={styles.cardStack}>
         {/* Next card (behind) */}
         {next && (
@@ -638,6 +717,90 @@ export const ExploreScreen = () => {
           </Animated.View>
         </Animated.View>
       </View>
+      )}
+
+      {/* List view — alternative to the swipe deck */}
+      {viewMode === 'list' && (
+        <FlatList
+          data={profiles.filter((p) => !actedIds.has(p.id))}
+          keyExtractor={(p) => p.id}
+          contentContainerStyle={styles.listContent}
+          ListHeaderComponent={<View style={styles.listSpacer} />}
+          ListEmptyComponent={
+            <View style={styles.listEmpty}>
+              <Ionicons name="search" size={32} color={colors.textMuted} />
+              <Text style={styles.listEmptyText}>
+                No hay más perfiles ahora mismo. Vuelve en unas horas.
+              </Text>
+            </View>
+          }
+          renderItem={({ item }) => {
+            const skills = computeCommonSkills(item).slice(0, 3);
+            const stage = item.projectStage ? PROJECT_STAGE_META[item.projectStage] : null;
+            return (
+              <View style={styles.listRow}>
+                <Pressable
+                  style={styles.listRowMain}
+                  onPress={() => navigation.navigate('UserProfile', { userId: item.id })}
+                  android_ripple={{ color: 'rgba(255,255,255,0.05)' }}
+                >
+                  <Avatar
+                    firstName={item.firstName}
+                    lastName={item.lastName}
+                    avatarUrl={item.avatarUrl ?? null}
+                    size={56}
+                  />
+                  <View style={styles.listRowInfo}>
+                    <View style={styles.listRowNameLine}>
+                      <Text style={styles.listRowName} numberOfLines={1}>
+                        {item.firstName} {item.lastName}
+                      </Text>
+                      <View style={styles.listRowScore}>
+                        <Text style={styles.listRowScoreText}>{item.compatibilityScore}%</Text>
+                      </View>
+                    </View>
+                    {item.location ? (
+                      <Text style={styles.listRowLocation} numberOfLines={1}>
+                        {item.location}
+                      </Text>
+                    ) : null}
+                    <View style={styles.listRowMeta}>
+                      {stage && (
+                        <View style={[styles.listRowChip, { backgroundColor: stage.bg }]}>
+                          <Text style={[styles.listRowChipText, { color: stage.color }]}>{stage.label}</Text>
+                        </View>
+                      )}
+                      {skills.map((s) => (
+                        <View key={s} style={styles.listRowChip}>
+                          <Text style={styles.listRowChipText}>{s}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </View>
+                </Pressable>
+                <View style={styles.listRowActions}>
+                  <TouchableOpacity
+                    style={[styles.listActionBtn, styles.listActionPass]}
+                    onPress={() => handleListPass(item)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Omitir"
+                  >
+                    <Ionicons name="close" size={20} color={colors.danger} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[styles.listActionBtn, styles.listActionLike]}
+                    onPress={() => handleListLike(item)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Mostrar interés"
+                  >
+                    <Ionicons name="flash" size={20} color="#4ADE80" />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          }}
+        />
+      )}
 
       {/* Filters Dropdown — level + goal free for everyone, location premium */}
       {showFilter && (
@@ -722,7 +885,8 @@ export const ExploreScreen = () => {
         </View>
       )}
 
-      {/* Action buttons */}
+      {/* Action buttons — only in swipe mode (list rows have their own) */}
+      {viewMode === 'swipe' && (
       <View style={styles.actions}>
         <TouchableOpacity
           style={styles.btnRewind}
@@ -768,6 +932,7 @@ export const ExploreScreen = () => {
           <Ionicons name="flash" size={32} color="#4ADE80" />
         </TouchableOpacity>
       </View>
+      )}
 
       {/* Like Limit Modal */}
       <Modal visible={showLimitModal} transparent animationType="fade" onRequestClose={() => setShowLimitModal(false)}>
@@ -1554,6 +1719,80 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     paddingBottom: spacing.sm,
     backgroundColor: colors.background,
+  },
+
+  // List mode
+  listSpacer: { height: 90 }, // clears the floating header
+  listContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.lg },
+  listEmpty: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+    gap: spacing.sm,
+  },
+  listEmptyText: {
+    fontSize: 14,
+    color: colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 21,
+  },
+  listRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.sm,
+    marginBottom: spacing.sm,
+    gap: spacing.sm,
+  },
+  listRowMain: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  listRowInfo: { flex: 1, gap: 2 },
+  listRowNameLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
+  listRowName: { flex: 1, fontSize: 15, fontWeight: '700', color: colors.text },
+  listRowScore: {
+    backgroundColor: 'rgba(74,222,128,0.15)',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  listRowScoreText: { fontSize: 11, fontWeight: '800', color: '#4ADE80' },
+  listRowLocation: { fontSize: 12, color: colors.textMuted },
+  listRowMeta: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
+  listRowChip: {
+    backgroundColor: colors.surfaceLight,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  listRowChipText: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+  listRowActions: { flexDirection: 'row', gap: 6 },
+  listActionBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+  },
+  listActionPass: {
+    backgroundColor: 'rgba(239,68,68,0.08)',
+    borderColor: 'rgba(239,68,68,0.3)',
+  },
+  listActionLike: {
+    backgroundColor: 'rgba(74,222,128,0.1)',
+    borderColor: 'rgba(74,222,128,0.4)',
   },
   btnRewind: {
     width: 48,
