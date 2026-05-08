@@ -4,13 +4,52 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Avatar } from '../components/Avatar';
+import { Coachmark, CoachmarkStep } from '../components/Coachmark';
 import { getLikesReceived, getMatches } from '../services/matches.service';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { MatchItem } from '../types/models';
 import { AppStackParamList } from '../types/navigation';
+
+const MATCHES_TUTORIAL_KEY = 'cofound:matchesTutorialSeen';
+
+const MATCHES_STEPS: CoachmarkStep[] = [
+  {
+    arrowTopRatio: 0.13,
+    arrowAlign: 'center',
+    arrowDirection: 'up',
+    title: 'Tus conexiones',
+    description:
+      'Aquí aparecen las personas con las que has conectado. Las que tienen mensaje sin leer se marcan con un punto verde.',
+  },
+  {
+    arrowTopRatio: 0.21,
+    arrowAlign: 'left',
+    arrowDirection: 'up',
+    title: 'Buscador',
+    description:
+      'Si tienes muchas conexiones, escribe el nombre aquí para filtrar la lista al vuelo.',
+  },
+  {
+    arrowTopRatio: 0.21,
+    arrowAlign: 'right',
+    arrowDirection: 'up',
+    title: 'Solicitudes',
+    description:
+      'El icono de la izquierda te lleva a las personas que te han mostrado interés todavía sin responder.',
+  },
+  {
+    arrowTopRatio: 0.5,
+    arrowAlign: 'center',
+    arrowDirection: 'down',
+    title: 'Caducidad',
+    description:
+      'Una conexión sin mensajes en 7 días desaparece automáticamente — el aviso "Caduca en…" te avisa cuando queda poco.',
+  },
+];
 
 const formatTime = (dateStr: string | null) => {
   if (!dateStr) return '';
@@ -139,6 +178,25 @@ export const MatchesScreen = () => {
   const [likesCount, setLikesCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  // Show first-visit coachmark only if the user has at least one match — no
+  // point teaching the matches list when it's empty.
+  useEffect(() => {
+    if (matches.length === 0) return;
+    let cancelled = false;
+    AsyncStorage.getItem(MATCHES_TUTORIAL_KEY).then((seen) => {
+      if (!cancelled && !seen) setShowTutorial(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [matches.length]);
+
+  const dismissTutorial = useCallback(() => {
+    setShowTutorial(false);
+    AsyncStorage.setItem(MATCHES_TUTORIAL_KEY, '1').catch(() => {});
+  }, []);
 
   const filteredMatches = matches.filter((m) => {
     if (!searchQuery.trim()) return true;
@@ -275,6 +333,7 @@ export const MatchesScreen = () => {
           </View>
         )}
       </ScrollView>
+      {showTutorial && <Coachmark steps={MATCHES_STEPS} onFinish={dismissTutorial} />}
     </SafeAreaView>
   );
 };

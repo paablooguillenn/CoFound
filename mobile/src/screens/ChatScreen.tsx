@@ -20,7 +20,10 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 import { Avatar } from '../components/Avatar';
+import { Coachmark, CoachmarkStep } from '../components/Coachmark';
 import { ProfileBadges } from '../components/ProfileBadges';
 import { SkillBadge } from '../components/SkillBadge';
 import { SocialLinks } from '../components/SocialLinks';
@@ -34,6 +37,43 @@ import { formatPresence } from '../utils/presence';
 type Props = NativeStackScreenProps<AppStackParamList, 'Chat'>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const CHAT_TUTORIAL_KEY = 'cofound:chatTutorialSeen';
+
+const CHAT_STEPS: CoachmarkStep[] = [
+  {
+    arrowTopRatio: 0.08,
+    arrowAlign: 'left',
+    arrowDirection: 'up',
+    title: 'Ver perfil',
+    description:
+      'Toca el nombre o el avatar de la cabecera para abrir el perfil completo de tu conexión.',
+  },
+  {
+    arrowTopRatio: 0.08,
+    arrowAlign: 'right',
+    arrowDirection: 'up',
+    title: 'Más opciones',
+    description:
+      'Desde los tres puntos puedes deshacer la conexión, bloquear al usuario o denunciarlo si fuese necesario.',
+  },
+  {
+    arrowTopRatio: 0.5,
+    arrowAlign: 'center',
+    arrowDirection: 'down',
+    title: 'Reaccionar',
+    description:
+      'Mantén pulsado cualquier mensaje para reaccionar (👍 🤝 🔥 💡 ❤️). Tu reacción aparece bajo la burbuja.',
+  },
+  {
+    arrowTopRatio: 0.5,
+    arrowAlign: 'right',
+    arrowDirection: 'down',
+    title: 'Eliminar mensaje',
+    description:
+      'En tus propios mensajes el menú añade "Eliminar". Solo puedes borrarlos durante los primeros 5 minutos.',
+  },
+];
 
 interface MessageReaction {
   userId: string;
@@ -249,7 +289,27 @@ export const ChatScreen = ({ navigation, route }: Props) => {
   const [profile, setProfile] = useState<MatchProfile | null>(null);
   const [photoViewer, setPhotoViewer] = useState<{ visible: boolean; index: number }>({ visible: false, index: 0 });
   const [reactionTarget, setReactionTarget] = useState<Message | null>(null);
+  const [showTutorial, setShowTutorial] = useState(false);
   const listRef = useRef<FlatList>(null);
+
+  // First-chat coachmark — gated by an AsyncStorage flag so it only fires once.
+  // We wait until the initial loading is done so the overlay sits over the
+  // real conversation, not a spinner.
+  useEffect(() => {
+    if (loading) return;
+    let cancelled = false;
+    AsyncStorage.getItem(CHAT_TUTORIAL_KEY).then((seen) => {
+      if (!cancelled && !seen) setShowTutorial(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [loading]);
+
+  const dismissTutorial = useCallback(() => {
+    setShowTutorial(false);
+    AsyncStorage.setItem(CHAT_TUTORIAL_KEY, '1').catch(() => {});
+  }, []);
 
   const nameParts = matchName.split(' ');
 
@@ -860,6 +920,8 @@ export const ChatScreen = ({ navigation, route }: Props) => {
           </Modal>
         </View>
       </Modal>
+
+      {showTutorial && <Coachmark steps={CHAT_STEPS} onFinish={dismissTutorial} />}
     </SafeAreaView>
   );
 };
