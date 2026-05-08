@@ -30,16 +30,12 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { EntrepreneurLevel, Goal, Skill } from '../types/models';
 import { AppStackParamList } from '../types/navigation';
-import { LEVEL_OPTIONS, GOAL_OPTIONS } from '../utils/profileLabels';
+import { LEVEL_OPTIONS, GOAL_OPTIONS, SKILL_OPTIONS } from '../utils/profileLabels';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-const stringToSkills = (value: string): Skill[] =>
-  value
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((name) => ({ name }));
+const toggleArray = (item: string, list: string[]): string[] =>
+  list.includes(item) ? list.filter((x) => x !== item) : [...list, item];
 
 export const ProfileScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
@@ -52,8 +48,8 @@ export const ProfileScreen = () => {
   const [bio, setBio] = useState('');
   const [interests, setInterests] = useState('');
   const [location, setLocation] = useState('');
-  const [offeredSkills, setOfferedSkills] = useState('');
-  const [learningSkills, setLearningSkills] = useState('');
+  const [offeredSkills, setOfferedSkills] = useState<string[]>([]);
+  const [learningSkills, setLearningSkills] = useState<string[]>([]);
   const [linkedinUsername, setLinkedinUsername] = useState('');
   const [instagramUsername, setInstagramUsername] = useState('');
   const [entrepreneurLevel, setEntrepreneurLevel] = useState<EntrepreneurLevel | null>(null);
@@ -80,8 +76,8 @@ export const ProfileScreen = () => {
       setBio(profile.bio);
       setInterests(profile.interests);
       setLocation(profile.location);
-      setOfferedSkills(profile.offeredSkills.map((s) => s.name).join(', '));
-      setLearningSkills(profile.learningSkills.map((s) => s.name).join(', '));
+      setOfferedSkills(profile.offeredSkills.map((s) => s.name));
+      setLearningSkills(profile.learningSkills.map((s) => s.name));
       setAvatarUrl(profile.avatarUrl ?? null);
       setLinkedinUsername(profile.linkedinUsername ?? '');
       setInstagramUsername(profile.instagramUsername ?? '');
@@ -149,8 +145,8 @@ export const ProfileScreen = () => {
         goal,
         linkedinUsername: linkedinUsername.trim() ? stripSocialHandle(linkedinUsername) : null,
         instagramUsername: instagramUsername.trim() ? stripSocialHandle(instagramUsername) : null,
-        offeredSkills: stringToSkills(offeredSkills),
-        learningSkills: stringToSkills(learningSkills),
+        offeredSkills: offeredSkills.map((name) => ({ name })),
+        learningSkills: learningSkills.map((name) => ({ name })),
       });
       if (user) {
         updateUser({ ...user, firstName: profile.firstName, lastName: profile.lastName });
@@ -405,18 +401,61 @@ export const ProfileScreen = () => {
               onChangeText={setLocation}
               placeholder="Madrid, España"
             />
-            <InputField
-              label="Habilidades que posees"
-              value={offeredSkills}
-              onChangeText={setOfferedSkills}
-              placeholder="marketing, react native, diseño..."
-            />
-            <InputField
-              label="Habilidades que deseas aprender"
-              value={learningSkills}
-              onChangeText={setLearningSkills}
-              placeholder="finanzas, growth, ui/ux..."
-            />
+            <Text style={styles.editSectionLabel}>Habilidades que ofreces</Text>
+            <Text style={styles.editHint}>
+              Selecciona en qué eres bueno/a — define con quién encajas como cofounder.
+            </Text>
+            <View style={styles.skillPills}>
+              {SKILL_OPTIONS.map((skill) => {
+                const selected = offeredSkills.includes(skill);
+                return (
+                  <TouchableOpacity
+                    key={`offer-${skill}`}
+                    style={[styles.skillPill, selected && styles.skillPillOffer]}
+                    onPress={() => setOfferedSkills((curr) => toggleArray(skill, curr))}
+                    activeOpacity={0.85}
+                  >
+                    <Text style={[styles.skillPillText, selected && styles.skillPillTextSelected]}>
+                      {skill}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.editSectionLabel}>Habilidades que buscas</Text>
+            <Text style={styles.editHint}>
+              Lo que esperas de tu cofounder — lo que tú no tienes.
+            </Text>
+            <View style={styles.skillPills}>
+              {SKILL_OPTIONS.map((skill) => {
+                const isOwn = offeredSkills.includes(skill);
+                const isWant = learningSkills.includes(skill);
+                return (
+                  <TouchableOpacity
+                    key={`learn-${skill}`}
+                    disabled={isOwn}
+                    style={[
+                      styles.skillPill,
+                      isOwn && styles.skillPillDisabled,
+                      isWant && styles.skillPillLearn,
+                    ]}
+                    onPress={() => setLearningSkills((curr) => toggleArray(skill, curr))}
+                    activeOpacity={0.85}
+                  >
+                    <Text
+                      style={[
+                        styles.skillPillText,
+                        isOwn && styles.skillPillTextDisabled,
+                        isWant && styles.skillPillTextSelected,
+                      ]}
+                    >
+                      {skill}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             <Text style={styles.editSectionLabel}>Nivel emprendedor</Text>
             <View style={styles.optionRow}>
@@ -729,6 +768,51 @@ const styles = StyleSheet.create({
   optionChipTextActive: {
     color: colors.primary,
     fontWeight: '700',
+  },
+  editHint: {
+    fontSize: 12,
+    color: colors.textMuted,
+    marginTop: -4,
+    lineHeight: 17,
+  },
+  skillPills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginTop: 4,
+  },
+  skillPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  skillPillOffer: {
+    borderColor: '#4ADE80',
+    backgroundColor: '#4ADE80',
+  },
+  skillPillLearn: {
+    borderColor: '#60A5FA',
+    backgroundColor: '#60A5FA',
+  },
+  skillPillDisabled: {
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    opacity: 0.4,
+  },
+  skillPillText: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  skillPillTextSelected: {
+    color: colors.background,
+    fontWeight: '700',
+  },
+  skillPillTextDisabled: {
+    color: colors.textMuted,
   },
   sectionTitle: {
     fontSize: 16,

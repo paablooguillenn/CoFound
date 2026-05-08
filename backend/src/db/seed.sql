@@ -13,6 +13,10 @@ DELETE FROM users WHERE email LIKE '%@cofound-seed.com';
 -- Añadir columnas si no existen
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS is_premium BOOLEAN DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS entrepreneur_level VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS goal VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS linkedin_username VARCHAR(120);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_username VARCHAR(120);
 
 -- Crear tabla user_photos si no existe
 CREATE TABLE IF NOT EXISTS user_photos (
@@ -274,6 +278,53 @@ ON CONFLICT (email) DO UPDATE SET
   bio = EXCLUDED.bio,
   interests = EXCLUDED.interests,
   location = EXCLUDED.location;
+
+-- ═══════════════════════════════════════════════════════════════════════════
+-- CAMPOS NUEVOS (nivel emprendedor, objetivo, LinkedIn, Instagram)
+-- Distribución equilibrada: 10 principiantes / 10 intermedios / 10 avanzados
+-- y 10 de cada objetivo (learn_skill / find_partner / networking).
+-- ═══════════════════════════════════════════════════════════════════════════
+
+UPDATE users u SET
+  entrepreneur_level = v.level,
+  goal = v.goal,
+  linkedin_username = v.linkedin,
+  instagram_username = v.instagram
+FROM (VALUES
+  -- 1-15: Mujeres
+  ('a0000000-0000-0000-0000-000000000001'::uuid, 'avanzado',    'find_partner', 'maria-gonzalez',    'mariagonzalez'),
+  ('a0000000-0000-0000-0000-000000000003'::uuid, 'avanzado',    'find_partner', 'laura-sanchez',     'laurasanchez'),
+  ('a0000000-0000-0000-0000-000000000005'::uuid, 'avanzado',    'networking',   'elena-martinez',    'elenamartinez'),
+  ('a0000000-0000-0000-0000-000000000007'::uuid, 'intermedio',  'find_partner', 'sofia-herrera',     'sofiaherrera'),
+  ('a0000000-0000-0000-0000-000000000008'::uuid, 'intermedio',  'find_partner', 'carmen-navarro',    'carmennavarro'),
+  ('a0000000-0000-0000-0000-000000000009'::uuid, 'avanzado',    'networking',   'lucia-romero',      'luciaromero'),
+  ('a0000000-0000-0000-0000-000000000010'::uuid, 'intermedio',  'networking',   'paula-jimenez',     'paulajimenez'),
+  ('a0000000-0000-0000-0000-000000000011'::uuid, 'avanzado',    'find_partner', 'ana-moreno',        'anamoreno'),
+  ('a0000000-0000-0000-0000-000000000012'::uuid, 'intermedio',  'networking',   'andrea-castro',     'andreacastro'),
+  ('a0000000-0000-0000-0000-000000000013'::uuid, 'intermedio',  'find_partner', 'irene-gil',         'irenegil'),
+  ('a0000000-0000-0000-0000-000000000014'::uuid, 'avanzado',    'networking',   'clara-vega',        'claravega'),
+  ('a0000000-0000-0000-0000-000000000015'::uuid, 'principiante','learn_skill',  'marta-prieto',      'martaprieto'),
+  ('a0000000-0000-0000-0000-000000000016'::uuid, 'avanzado',    'find_partner', 'nuria-blanco',      'nuriablanco'),
+  ('a0000000-0000-0000-0000-000000000017'::uuid, 'principiante','learn_skill',  'alba-serrano',      'albaserrano'),
+  ('a0000000-0000-0000-0000-000000000018'::uuid, 'intermedio',  'find_partner', 'rocio-molina',      'rociomolina'),
+  -- 16-30: Hombres
+  ('a0000000-0000-0000-0000-000000000002'::uuid, 'intermedio',  'find_partner', 'carlos-ruiz',       'carlosruiz'),
+  ('a0000000-0000-0000-0000-000000000004'::uuid, 'intermedio',  'networking',   'javier-lopez',      'javierlopez'),
+  ('a0000000-0000-0000-0000-000000000006'::uuid, 'avanzado',    'find_partner', 'daniel-fernandez',  'danielfernandez'),
+  ('a0000000-0000-0000-0000-000000000019'::uuid, 'avanzado',    'networking',   'pablo-ruiz',        'pabloruiz'),
+  ('a0000000-0000-0000-0000-000000000020'::uuid, 'avanzado',    'find_partner', 'adrian-torres',     'adriantorres'),
+  ('a0000000-0000-0000-0000-000000000021'::uuid, 'intermedio',  'find_partner', 'marcos-diaz',       'marcosdiaz'),
+  ('a0000000-0000-0000-0000-000000000022'::uuid, 'avanzado',    'networking',   'sergio-martin',     'sergiomartin'),
+  ('a0000000-0000-0000-0000-000000000023'::uuid, 'intermedio',  'learn_skill',  'diego-santos',      'diegosantos'),
+  ('a0000000-0000-0000-0000-000000000024'::uuid, 'avanzado',    'find_partner', 'raul-ortega',       'raulortega'),
+  ('a0000000-0000-0000-0000-000000000025'::uuid, 'principiante','learn_skill',  'alex-guerrero',     'alexguerrero'),
+  ('a0000000-0000-0000-0000-000000000026'::uuid, 'avanzado',    'networking',   'miguel-ramos',      'miguelramos'),
+  ('a0000000-0000-0000-0000-000000000027'::uuid, 'intermedio',  'learn_skill',  'ivan-fuentes',      'ivanfuentes'),
+  ('a0000000-0000-0000-0000-000000000028'::uuid, 'avanzado',    'networking',   'hugo-mendez',       'hugomendez'),
+  ('a0000000-0000-0000-0000-000000000029'::uuid, 'principiante','learn_skill',  'oscar-silva',       'oscarsilva'),
+  ('a0000000-0000-0000-0000-000000000030'::uuid, 'principiante','learn_skill',  'victor-reyes',      'victorreyes')
+) AS v(id, level, goal, linkedin, instagram)
+WHERE u.id = v.id;
 
 -- ═══════════════════════════════════════════════════════════════════════════
 -- FOTOS (3 por usuario: retrato + 2 paisajes/objetos)

@@ -1,4 +1,40 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { pool } from '../config/database';
+
+/**
+ * Wipes existing seed users (those at @cofound-seed.com) and reinserts the
+ * full seed dataset from `db/seed.sql`. Used when seeds need to pick up new
+ * fields (entrepreneur_level, goal, linkedin_username, etc.) without
+ * connecting to the DB by hand.
+ */
+export const runSeedScript = async () => {
+  const seedPath = join(__dirname, '..', 'db', 'seed.sql');
+  const sql = readFileSync(seedPath, 'utf8');
+  await pool.query(sql);
+  const summary = await pool.query<{
+    total: string;
+    with_level: string;
+    with_goal: string;
+    with_linkedin: string;
+    with_instagram: string;
+  }>(
+    `SELECT count(*)::text AS total,
+            count(*) FILTER (WHERE entrepreneur_level IS NOT NULL)::text AS with_level,
+            count(*) FILTER (WHERE goal IS NOT NULL)::text AS with_goal,
+            count(*) FILTER (WHERE linkedin_username IS NOT NULL)::text AS with_linkedin,
+            count(*) FILTER (WHERE instagram_username IS NOT NULL)::text AS with_instagram
+     FROM users WHERE email LIKE '%@cofound-seed.com'`,
+  );
+  return {
+    total: Number(summary.rows[0].total),
+    withLevel: Number(summary.rows[0].with_level),
+    withGoal: Number(summary.rows[0].with_goal),
+    withLinkedin: Number(summary.rows[0].with_linkedin),
+    withInstagram: Number(summary.rows[0].with_instagram),
+  };
+};
 
 /**
  * Backfills the new profile fields (entrepreneur_level, goal,

@@ -1,5 +1,15 @@
 import { EntrepreneurLevel, Goal } from '../types/models';
 
+// Catálogo único de habilidades disponibles. Compartido por el wizard de
+// creación de perfil y la edición desde Profile.
+export const SKILL_OPTIONS = [
+  'Marketing Digital', 'Programación', 'Diseño UX/UI', 'Ventas',
+  'Finanzas', 'Desarrollo Web', 'Gestión de Proyectos', 'SEO/SEM',
+  'Redes Sociales', 'Copywriting', 'Análisis de Datos', 'E-commerce',
+  'Networking', 'Estrategia de Negocio', 'Desarrollo Móvil',
+  'Blockchain', 'Inteligencia Artificial', 'Producción de Video',
+];
+
 export const LEVEL_META: Record<EntrepreneurLevel, { label: string; color: string; bg: string; icon: string }> = {
   principiante: { label: 'Principiante', color: '#4ADE80', bg: 'rgba(74,222,128,0.15)', icon: 'leaf' },
   intermedio: { label: 'Intermedio', color: '#FBBF24', bg: 'rgba(251,191,36,0.15)', icon: 'flame' },

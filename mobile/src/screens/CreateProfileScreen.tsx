@@ -21,19 +21,11 @@ import { updateMyProfile } from '../services/profile.service';
 import { addPhoto, getMyPhotos } from '../services/api';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
-import { GOAL_OPTIONS, LEVEL_OPTIONS } from '../utils/profileLabels';
+import { GOAL_OPTIONS, LEVEL_OPTIONS, SKILL_OPTIONS } from '../utils/profileLabels';
 import { EntrepreneurLevel, Goal } from '../types/models';
 
 const TOTAL_STEPS = 7;
 const MIN_PHOTOS = 1;
-
-const SKILL_OPTIONS = [
-  'Marketing Digital', 'Programación', 'Diseño UX/UI', 'Ventas',
-  'Finanzas', 'Desarrollo Web', 'Gestión de Proyectos', 'SEO/SEM',
-  'Redes Sociales', 'Copywriting', 'Análisis de Datos', 'E-commerce',
-  'Networking', 'Estrategia de Negocio', 'Desarrollo Móvil',
-  'Blockchain', 'Inteligencia Artificial', 'Producción de Video',
-];
 
 const INTEREST_AREAS = [
   'Tecnología', 'E-commerce', 'Servicios', 'SaaS', 'Marketing',
