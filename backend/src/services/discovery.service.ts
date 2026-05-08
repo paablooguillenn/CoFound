@@ -5,6 +5,8 @@ import { getPhotosMap } from './photo.service';
 type DiscoveryOptions = {
   locationFilter?: string;
   skillFilter?: string;
+  levelFilter?: 'principiante' | 'intermedio' | 'avanzado';
+  goalFilter?: 'learn_skill' | 'find_partner' | 'networking';
 };
 
 const FREE_DAILY_LIMIT = 5;
@@ -14,7 +16,7 @@ export const getDiscoveryFeed = async (
   currentUserId: string,
   options: DiscoveryOptions = {},
 ) => {
-  const { locationFilter, skillFilter } = options;
+  const { locationFilter, skillFilter, levelFilter, goalFilter } = options;
 
   const meta = await pool.query<{ is_premium: boolean; today_count: string }>(
     `SELECT u.is_premium,
@@ -37,6 +39,8 @@ export const getDiscoveryFeed = async (
   const params: (string | number)[] = [currentUserId, limit];
   let locationClause = '';
   let skillClause = '';
+  let levelClause = '';
+  let goalClause = '';
 
   if (locationFilter) {
     params.push(`%${locationFilter}%`);
@@ -50,6 +54,16 @@ export const getDiscoveryFeed = async (
       JOIN skills sf ON sf.id = usf.skill_id
       WHERE usf.user_id = u.id AND sf.name ILIKE $${params.length}
     )`;
+  }
+
+  if (levelFilter) {
+    params.push(levelFilter);
+    levelClause = `AND u.entrepreneur_level = $${params.length}`;
+  }
+
+  if (goalFilter) {
+    params.push(goalFilter);
+    goalClause = `AND u.goal = $${params.length}`;
   }
 
   const result = await pool.query<{
@@ -132,6 +146,8 @@ export const getDiscoveryFeed = async (
        )
        ${locationClause}
        ${skillClause}
+       ${levelClause}
+       ${goalClause}
      ORDER BY is_boosted DESC, super_liked_by_them DESC, compatibility_score DESC, u.created_at DESC
      LIMIT $2`,
     params,

@@ -40,6 +40,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS entrepreneur_level VARCHAR(20);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS goal VARCHAR(20);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS linkedin_username VARCHAR(120);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_username VARCHAR(120);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS is_mentor BOOLEAN NOT NULL DEFAULT FALSE;
 
 -- Support / contact messages sent to the team from inside the app.
 CREATE TABLE IF NOT EXISTS support_messages (

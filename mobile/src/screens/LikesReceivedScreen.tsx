@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '../components/Avatar';
+import { SkeletonRow } from '../components/Skeleton';
 import { useAuth } from '../context/AuthContext';
 import { LikeReceived, getLikesReceived, likeProfile } from '../services/matches.service';
 import { colors } from '../theme/colors';
@@ -80,8 +81,10 @@ export const LikesReceivedScreen = () => {
       </View>
 
       {loading && !refreshing ? (
-        <View style={styles.center}>
-          <ActivityIndicator color={colors.primary} />
+        <View>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <SkeletonRow key={i} />
+          ))}
         </View>
       ) : likes.length === 0 ? (
         <View style={styles.center}>

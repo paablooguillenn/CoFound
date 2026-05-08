@@ -17,6 +17,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import * as Haptics from 'expo-haptics';
+
 import { Avatar } from '../components/Avatar';
 import { LoadingDots } from '../components/LoadingDots';
 import { MatchNotification } from '../components/MatchNotification';
@@ -113,6 +115,8 @@ export const ExploreScreen = () => {
   // Location filter (premium only)
   const [locations, setLocations] = useState<string[]>([]);
   const [selectedLocation, setSelectedLocation] = useState<string | undefined>();
+  const [selectedLevel, setSelectedLevel] = useState<'principiante' | 'intermedio' | 'avanzado' | undefined>();
+  const [selectedGoal, setSelectedGoal] = useState<'learn_skill' | 'find_partner' | 'networking' | undefined>();
   const [showFilter, setShowFilter] = useState(false);
 
   // Swipe animation values
@@ -139,7 +143,11 @@ export const ExploreScreen = () => {
       // Subsequent refreshes (tab switches, filter changes) load silently in the
       // background to keep the swipe deck visible and responsive.
       if (!initialLoadedRef.current) setLoading(true);
-      const data = await getDiscoveryProfiles(selectedLocation);
+      const data = await getDiscoveryProfiles({
+        location: selectedLocation,
+        level: selectedLevel,
+        goal: selectedGoal,
+      });
       setProfiles(data);
       setCurrentIndex(0);
       position.setValue({ x: 0, y: 0 });
@@ -149,7 +157,7 @@ export const ExploreScreen = () => {
     } finally {
       setLoading(false);
     }
-  }, [selectedLocation, position]);
+  }, [selectedLocation, selectedLevel, selectedGoal, position]);
 
   // Load locations for filter
   useEffect(() => {
@@ -176,7 +184,7 @@ export const ExploreScreen = () => {
     if (initialLoadedRef.current) {
       loadProfiles();
     }
-  }, [selectedLocation, loadProfiles]);
+  }, [selectedLocation, selectedLevel, selectedGoal, loadProfiles]);
 
   useEffect(() => {
     animateEntrance();
@@ -192,9 +200,11 @@ export const ExploreScreen = () => {
   // Fire-and-forget like in the background; advance the card immediately
   const handleLikeInBackground = (profile: DiscoveryUser) => {
     setLiking(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
     likeProfile(profile.id)
       .then((result) => {
         if (result.isMatch && result.matchId) {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => {});
           setMatchModal({
             visible: true,
             name: `${profile.firstName} ${profile.lastName}`,
@@ -245,6 +255,7 @@ export const ExploreScreen = () => {
 
     // Trigger the burst overlay (star + sparks + halo)
     setShowSuperBurst(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
 
     // Launch the card up and slightly back instead of sideways — feels like
     // "shooting it into the sky".
@@ -302,6 +313,7 @@ export const ExploreScreen = () => {
   doSwipeRef.current = (direction: 'left' | 'right') => {
     const profile = profilesRef.current[currentIndexRef.current];
     if (!profile) return;
+    Haptics.selectionAsync().catch(() => {});
 
     const x = direction === 'right' ? SCREEN_WIDTH * 1.5 : -SCREEN_WIDTH * 1.5;
 
@@ -436,6 +448,15 @@ export const ExploreScreen = () => {
               ? 'Ya has visto todos los perfiles disponibles. ¡Vuelve pronto!'
               : 'Vuelve mañana para descubrir más emprendedores'}
           </Text>
+          <TouchableOpacity
+            onPress={() => loadProfiles()}
+            style={styles.refreshBtn}
+            accessibilityRole="button"
+            accessibilityLabel="Refrescar feed"
+          >
+            <Ionicons name="refresh" size={16} color="#4ADE80" />
+            <Text style={styles.refreshBtnText}>Refrescar feed</Text>
+          </TouchableOpacity>
           {!isPremium && (
             <View style={styles.premiumBanner}>
               <Ionicons name="ribbon" size={28} color={colors.premiumStart} />
@@ -460,14 +481,17 @@ export const ExploreScreen = () => {
       <SafeAreaView style={styles.headerOverlay} pointerEvents="box-none">
         <View style={styles.header}>
           <View style={styles.headerLeft}>
-            {isPremium && (
-              <TouchableOpacity
-                style={[styles.filterBtn, selectedLocation && styles.filterBtnActive]}
-                onPress={() => setShowFilter(!showFilter)}
-              >
-                <Ionicons name="options-outline" size={20} color={colors.white} />
-              </TouchableOpacity>
-            )}
+            <TouchableOpacity
+              style={[styles.filterBtn, (selectedLocation || selectedLevel || selectedGoal) && styles.filterBtnActive]}
+              onPress={() => setShowFilter(!showFilter)}
+              accessibilityRole="button"
+              accessibilityLabel="Filtros"
+            >
+              <Ionicons name="options-outline" size={20} color={colors.white} />
+              {(selectedLocation || selectedLevel || selectedGoal) && (
+                <View style={styles.filterBtnDot} />
+              )}
+            </TouchableOpacity>
           </View>
           <Text style={styles.headerTitle}>CoFound</Text>
           <View style={styles.headerRight} />
@@ -521,24 +545,86 @@ export const ExploreScreen = () => {
         </Animated.View>
       </View>
 
-      {/* Location Filter Dropdown */}
-      {showFilter && isPremium && (
+      {/* Filters Dropdown — level + goal free for everyone, location premium */}
+      {showFilter && (
         <View style={styles.filterDropdown}>
-          <TouchableOpacity
-            style={[styles.filterOption, !selectedLocation && styles.filterOptionActive]}
-            onPress={() => { setSelectedLocation(undefined); setShowFilter(false); }}
-          >
-            <Text style={styles.filterOptionText}>Todas las ciudades</Text>
-          </TouchableOpacity>
-          {locations.map((loc) => (
+          <Text style={styles.filterSectionLabel}>Nivel</Text>
+          <View style={styles.filterPillsRow}>
             <TouchableOpacity
-              key={loc}
-              style={[styles.filterOption, selectedLocation === loc && styles.filterOptionActive]}
-              onPress={() => { setSelectedLocation(loc); setShowFilter(false); }}
+              style={[styles.filterPill, !selectedLevel && styles.filterPillActive]}
+              onPress={() => setSelectedLevel(undefined)}
             >
-              <Text style={styles.filterOptionText}>{loc}</Text>
+              <Text style={[styles.filterPillText, !selectedLevel && styles.filterPillTextActive]}>Todos</Text>
             </TouchableOpacity>
-          ))}
+            {(['principiante', 'intermedio', 'avanzado'] as const).map((lvl) => (
+              <TouchableOpacity
+                key={lvl}
+                style={[styles.filterPill, selectedLevel === lvl && styles.filterPillActive]}
+                onPress={() => setSelectedLevel(selectedLevel === lvl ? undefined : lvl)}
+              >
+                <Text style={[styles.filterPillText, selectedLevel === lvl && styles.filterPillTextActive]}>
+                  {lvl[0].toUpperCase() + lvl.slice(1)}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.filterSectionLabel}>¿Qué busca?</Text>
+          <View style={styles.filterPillsRow}>
+            <TouchableOpacity
+              style={[styles.filterPill, !selectedGoal && styles.filterPillActive]}
+              onPress={() => setSelectedGoal(undefined)}
+            >
+              <Text style={[styles.filterPillText, !selectedGoal && styles.filterPillTextActive]}>Todos</Text>
+            </TouchableOpacity>
+            {([
+              { v: 'find_partner' as const, l: 'Socio' },
+              { v: 'learn_skill' as const, l: 'Aprender' },
+              { v: 'networking' as const, l: 'Networking' },
+            ]).map((g) => (
+              <TouchableOpacity
+                key={g.v}
+                style={[styles.filterPill, selectedGoal === g.v && styles.filterPillActive]}
+                onPress={() => setSelectedGoal(selectedGoal === g.v ? undefined : g.v)}
+              >
+                <Text style={[styles.filterPillText, selectedGoal === g.v && styles.filterPillTextActive]}>
+                  {g.l}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.filterSectionLabel}>
+            Ubicación {!isPremium && <Text style={styles.filterPremiumLabel}>(Premium)</Text>}
+          </Text>
+          {isPremium ? (
+            <View style={styles.filterPillsRow}>
+              <TouchableOpacity
+                style={[styles.filterPill, !selectedLocation && styles.filterPillActive]}
+                onPress={() => setSelectedLocation(undefined)}
+              >
+                <Text style={[styles.filterPillText, !selectedLocation && styles.filterPillTextActive]}>Todas</Text>
+              </TouchableOpacity>
+              {locations.map((loc) => (
+                <TouchableOpacity
+                  key={loc}
+                  style={[styles.filterPill, selectedLocation === loc && styles.filterPillActive]}
+                  onPress={() => setSelectedLocation(selectedLocation === loc ? undefined : loc)}
+                >
+                  <Text style={[styles.filterPillText, selectedLocation === loc && styles.filterPillTextActive]}>{loc}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : (
+            <TouchableOpacity onPress={() => { setShowFilter(false); navigation.navigate('Pricing'); }} style={styles.filterPremiumCta}>
+              <Ionicons name="lock-closed" size={14} color={colors.premiumStart} />
+              <Text style={styles.filterPremiumCtaText}>Desbloquea filtros por ciudad</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity style={styles.filterCloseBtn} onPress={() => setShowFilter(false)}>
+            <Text style={styles.filterCloseBtnText}>Aplicar</Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -1193,18 +1279,75 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 100,
     left: spacing.md,
+    right: spacing.md,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: 14,
-    paddingVertical: spacing.sm,
+    padding: spacing.md,
     zIndex: 20,
-    minWidth: 200,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.4,
     shadowRadius: 16,
     elevation: 10,
+  },
+  filterSectionLabel: {
+    color: colors.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginTop: 8,
+    marginBottom: 6,
+  },
+  filterPremiumLabel: {
+    color: colors.premiumStart,
+    fontWeight: '800',
+  },
+  filterPillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 4,
+  },
+  filterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceLight,
+  },
+  filterPillActive: {
+    borderColor: '#4ADE80',
+    backgroundColor: 'rgba(74,222,128,0.18)',
+  },
+  filterPillText: { color: colors.textSecondary, fontSize: 12, fontWeight: '600' },
+  filterPillTextActive: { color: '#4ADE80', fontWeight: '800' },
+  filterPremiumCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  filterPremiumCtaText: { color: colors.premiumStart, fontSize: 13, fontWeight: '700' },
+  filterCloseBtn: {
+    marginTop: 12,
+    paddingVertical: 10,
+    backgroundColor: '#4ADE80',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  filterCloseBtnText: { color: colors.background, fontWeight: '800', fontSize: 13 },
+  filterBtnDot: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#4ADE80',
   },
   filterOption: {
     paddingVertical: 12,
@@ -1295,6 +1438,19 @@ const styles = StyleSheet.create({
   },
   emptyTitle: { fontSize: 20, fontWeight: '800', color: colors.text, textAlign: 'center' },
   emptySubtitle: { color: colors.textSecondary, textAlign: 'center', lineHeight: 22, fontSize: 14 },
+  refreshBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.5)',
+    backgroundColor: 'rgba(74,222,128,0.1)',
+    marginTop: spacing.sm,
+  },
+  refreshBtnText: { color: '#4ADE80', fontWeight: '700', fontSize: 13 },
   premiumBanner: {
     width: '100%',
     borderRadius: 20,

@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, Animated, RefreshControl, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, RefreshControl, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -138,6 +138,13 @@ export const MatchesScreen = () => {
   const [matches, setMatches] = useState<MatchItem[]>([]);
   const [likesCount, setLikesCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredMatches = matches.filter((m) => {
+    if (!searchQuery.trim()) return true;
+    const q = searchQuery.trim().toLowerCase();
+    return `${m.firstName} ${m.lastName}`.toLowerCase().includes(q);
+  });
 
   const loadMatches = useCallback(async () => {
     try {
@@ -228,7 +235,27 @@ export const MatchesScreen = () => {
           </View>
         ) : (
           <View style={styles.listContainer}>
-            {matches.map((match, index) => {
+            <View style={styles.searchRow}>
+              <Ionicons name="search-outline" size={16} color={colors.textMuted} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Buscar conexión por nombre..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+              {searchQuery.length > 0 && (
+                <TouchableOpacity onPress={() => setSearchQuery('')} hitSlop={8}>
+                  <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+                </TouchableOpacity>
+              )}
+            </View>
+            {filteredMatches.length === 0 && (
+              <Text style={styles.searchEmpty}>No hay conexiones que coincidan con "{searchQuery}".</Text>
+            )}
+            {filteredMatches.map((match, index) => {
               const matchName = `${match.user.firstName} ${match.user.lastName}`;
               return (
                 <AnimatedMatchRow
@@ -301,6 +328,31 @@ const styles = StyleSheet.create({
   headerSubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   scroll: { flex: 1 },
   listContainer: { paddingTop: spacing.xs },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  searchInput: {
+    flex: 1,
+    color: colors.text,
+    fontSize: 14,
+  },
+  searchEmpty: {
+    textAlign: 'center',
+    color: colors.textMuted,
+    fontStyle: 'italic',
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+  },
   empty: {
     alignItems: 'center',
     justifyContent: 'center',

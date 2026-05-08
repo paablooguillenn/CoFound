@@ -6,6 +6,7 @@ import {
   Image,
   Modal,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -562,6 +563,22 @@ export const ProfileScreen = () => {
 
         {/* Menú de opciones */}
         <View style={styles.menuCard}>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => {
+              if (!user?.id) return;
+              Share.share({
+                message: `Echa un vistazo a mi perfil profesional en CoFound: https://cofound.space/u/${user.id}`,
+                url: `https://cofound.space/u/${user.id}`,
+              }).catch(() => {});
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Compartir mi perfil"
+          >
+            <Ionicons name="share-social-outline" size={18} color="#4ADE80" />
+            <Text style={styles.menuItemText}>Compartir mi perfil</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
           {([
             { label: 'Configuración de cuenta', screen: 'Settings' as const, icon: 'settings-outline' as const },
             { label: 'Privacidad y seguridad', screen: 'Privacy' as const, icon: 'shield-outline' as const },

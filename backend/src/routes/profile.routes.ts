@@ -7,6 +7,7 @@ import {
   completenessController,
   confirmEmailVerificationController,
   deactivateAccountController,
+  improveBioController,
   deleteAccountController,
   exportDataController,
   getBoostStatusController,
@@ -39,3 +40,4 @@ profileRouter.post('/boost', activateBoostController);
 profileRouter.get('/boost', getBoostStatusController);
 profileRouter.post('/verify-email/request', requestEmailVerificationController);
 profileRouter.post('/verify-email/confirm', confirmEmailVerificationController);
+profileRouter.post('/improve-bio', improveBioController);

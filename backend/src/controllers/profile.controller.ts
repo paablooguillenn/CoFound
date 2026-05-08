@@ -19,6 +19,7 @@ import {
   upgradeToPremium,
 } from '../services/profile.service';
 import { confirmEmailVerification, requestEmailVerification } from '../services/auth.service';
+import { improveBio } from '../services/ai.service';
 
 const skillSchema = z.object({
   name: z.string().min(1),
@@ -224,6 +225,18 @@ export const confirmEmailVerificationController = async (request: Request, respo
     const { code } = verifyEmailSchema.parse(request.body);
     const result = await confirmEmailVerification(request.user!.id, code);
     response.json(result);
+  } catch (error) {
+    next(error);
+  }
+};
+
+const improveBioSchema = z.object({ draft: z.string().min(10).max(2000) });
+
+export const improveBioController = async (request: Request, response: Response, next: NextFunction) => {
+  try {
+    const { draft } = improveBioSchema.parse(request.body);
+    const improved = await improveBio(draft);
+    response.json({ improved });
   } catch (error) {
     next(error);
   }

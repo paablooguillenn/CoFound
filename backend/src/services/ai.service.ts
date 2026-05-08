@@ -5,6 +5,42 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY || '',
 });
 
+/**
+ * Polishes the user's draft bio for the cofounder profile. Keeps the user's
+ * voice but tightens grammar, structure and impact. Returns a single
+ * paragraph in Spanish, no longer than ~280 characters, no emojis.
+ */
+export const improveBio = async (draft: string): Promise<string> => {
+  const trimmed = draft.trim();
+  if (!trimmed) {
+    throw new Error('Draft bio is empty');
+  }
+
+  const systemPrompt = `Eres un editor profesional especializado en biografías para una app de networking entre cofounders en español. Tu trabajo:
+- Mejora la redacción manteniendo la VOZ y los hechos del usuario.
+- Estructura: 1) qué hace o aporta, 2) qué busca, 3) un detalle distintivo (opcional).
+- Máximo 280 caracteres.
+- Tono: cercano pero profesional, sin clichés ("apasionado por…"), sin emojis, sin hashtags.
+- Devuelve ÚNICAMENTE el texto pulido en una sola línea, sin comillas ni introducción.`;
+
+  const completion = await groq.chat.completions.create({
+    model: 'llama-3.3-70b-versatile',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: `Bio en bruto:\n"${trimmed}"\n\nPúlela según las reglas.` },
+    ],
+    temperature: 0.5,
+    max_tokens: 200,
+  });
+
+  const improved = completion.choices[0]?.message?.content?.trim();
+  if (!improved) {
+    throw new Error('AI returned empty content');
+  }
+  // Strip surrounding quotes if the model added them despite instructions.
+  return improved.replace(/^["“'`]+|["”'`]+$/g, '').trim();
+};
+
 export const generateAutoReply = async (
   matchId: string,
   senderId: string,

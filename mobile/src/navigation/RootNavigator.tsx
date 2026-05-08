@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../context/AuthContext';
 import { CreateProfileScreen } from '../screens/CreateProfileScreen';
+import { OnboardingScreen } from '../screens/OnboardingScreen';
 import { SplashScreen } from '../screens/SplashScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -48,11 +50,33 @@ const AppStackNavigator = ({ initialRouteName }: { initialRouteName: keyof AppSt
   </Stack.Navigator>
 );
 
+const ONBOARDING_KEY = 'cofound:onboardingSeen';
+
 export const RootNavigator = () => {
   const { token, isLoading, profileComplete, user } = useAuth();
+  const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
 
-  if (isLoading) return <SplashScreen />;
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then((v) => setOnboardingSeen(v === 'true'))
+      .catch(() => setOnboardingSeen(true));
+  }, []);
+
+  if (isLoading || onboardingSeen === null) return <SplashScreen />;
   if (!token) return <AuthNavigator />;
+
+  // First-time users see the onboarding carousel before the profile wizard.
+  if (!onboardingSeen && !profileComplete) {
+    return (
+      <OnboardingScreen
+        onFinish={() => {
+          AsyncStorage.setItem(ONBOARDING_KEY, 'true').catch(() => {});
+          setOnboardingSeen(true);
+        }}
+      />
+    );
+  }
+
   if (!profileComplete) return <CreateProfileScreen />;
 
   const initialRoute: keyof AppStackParamList = user?.emailVerified === false ? 'VerifyEmail' : 'Tabs';

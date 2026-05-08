@@ -19,6 +19,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { updateMyProfile } from '../services/profile.service';
 import { addPhoto, getMyPhotos } from '../services/api';
+import { improveBioWithAi } from '../services/profile.service';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { GOAL_OPTIONS, LEVEL_OPTIONS, SKILL_OPTIONS } from '../utils/profileLabels';
@@ -46,6 +47,24 @@ export const CreateProfileScreen = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [improvingBio, setImprovingBio] = useState(false);
+
+  const handleImproveBio = async () => {
+    if (bio.trim().length < 10) {
+      Alert.alert('Bio demasiado corta', 'Escribe al menos 10 caracteres antes de pulirla con IA.');
+      return;
+    }
+    try {
+      setImprovingBio(true);
+      const improved = await improveBioWithAi(bio);
+      setBio(improved);
+    } catch (err: any) {
+      const msg = err?.response?.data?.message ?? 'No se pudo mejorar la bio. Inténtalo de nuevo.';
+      Alert.alert('Error', msg);
+    } finally {
+      setImprovingBio(false);
+    }
+  };
 
   const stepAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -212,6 +231,19 @@ export const CreateProfileScreen = () => {
                 </Text>
                 {bio.length >= 20 && <Ionicons name="checkmark-circle" size={16} color={colors.success} />}
               </View>
+              <TouchableOpacity
+                style={[styles.aiButton, (improvingBio || bio.trim().length < 10) && styles.aiButtonDisabled]}
+                onPress={handleImproveBio}
+                disabled={improvingBio || bio.trim().length < 10}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Mejorar bio con IA"
+              >
+                <Ionicons name="sparkles" size={18} color={improvingBio ? colors.textMuted : '#60A5FA'} />
+                <Text style={[styles.aiButtonText, improvingBio && { color: colors.textMuted }]}>
+                  {improvingBio ? 'Puliendo con IA...' : 'Mejorar con IA'}
+                </Text>
+              </TouchableOpacity>
             </Animated.View>
           )}
 
@@ -554,6 +586,24 @@ const styles = StyleSheet.create({
   },
   charCount: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
   charCountOk: { color: colors.success },
+  aiButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(96,165,250,0.5)',
+    backgroundColor: 'rgba(96,165,250,0.1)',
+    marginTop: spacing.sm,
+  },
+  aiButtonDisabled: {
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  aiButtonText: { color: '#60A5FA', fontWeight: '700', fontSize: 14 },
   optionCard: {
     flexDirection: 'row',
     alignItems: 'center',

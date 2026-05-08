@@ -116,3 +116,8 @@ export const confirmEmailVerificationCode = async (code: string) => {
   const response = await api.post<{ success: boolean }>('/profile/verify-email/confirm', { code });
   return response.data;
 };
+
+export const improveBioWithAi = async (draft: string) => {
+  const response = await api.post<{ improved: string }>('/profile/improve-bio', { draft });
+  return response.data.improved;
+};
