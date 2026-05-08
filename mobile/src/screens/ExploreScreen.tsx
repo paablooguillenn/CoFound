@@ -18,8 +18,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import * as Haptics from 'expo-haptics';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 import { Avatar } from '../components/Avatar';
+import { DiscoveryTutorial } from '../components/DiscoveryTutorial';
 import { LoadingDots } from '../components/LoadingDots';
 import { MatchNotification } from '../components/MatchNotification';
 import { ProfileBadges } from '../components/ProfileBadges';
@@ -57,6 +59,13 @@ export const ExploreScreen = () => {
   const [showSuperPremiumModal, setShowSuperPremiumModal] = useState(false);
   const [showSuperLimitModal, setShowSuperLimitModal] = useState(false);
   const [showSuperBurst, setShowSuperBurst] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('cofound:discoveryTutorialSeen').then((v) => {
+      if (v !== 'true') setShowTutorial(true);
+    });
+  }, []);
 
   const [matchModal, setMatchModal] = useState<{
     visible: boolean;
@@ -477,6 +486,14 @@ export const ExploreScreen = () => {
   return (
     <View style={styles.container}>
       <SuperLikeAnimation visible={showSuperBurst} onComplete={() => setShowSuperBurst(false)} />
+      {showTutorial && (
+        <DiscoveryTutorial
+          onFinish={() => {
+            setShowTutorial(false);
+            AsyncStorage.setItem('cofound:discoveryTutorialSeen', 'true').catch(() => {});
+          }}
+        />
+      )}
       {/* Header */}
       <SafeAreaView style={styles.headerOverlay} pointerEvents="box-none">
         <View style={styles.header}>
