@@ -33,6 +33,30 @@ export const getMessages = async (currentUserId: string, matchId: string) => {
   }));
 };
 
+/**
+ * Soft-deletes a message: only the original sender can delete their own
+ * messages, and only within a 5-minute window after sending. Hard delete
+ * (DELETE FROM messages) so the row disappears for both ends.
+ */
+export const deleteMessage = async (currentUserId: string, messageId: string) => {
+  const check = await pool.query<{ sender_id: string; created_at: Date }>(
+    'SELECT sender_id, created_at FROM messages WHERE id = $1',
+    [messageId],
+  );
+  if (!check.rowCount) {
+    throw new AppError('Mensaje no encontrado', 404);
+  }
+  if (check.rows[0].sender_id !== currentUserId) {
+    throw new AppError('Solo puedes borrar mensajes propios', 403);
+  }
+  const ageMs = Date.now() - new Date(check.rows[0].created_at).getTime();
+  if (ageMs > 5 * 60 * 1000) {
+    throw new AppError('Solo puedes borrar mensajes durante los primeros 5 minutos', 403);
+  }
+  await pool.query('DELETE FROM messages WHERE id = $1', [messageId]);
+  return { success: true };
+};
+
 export const sendMessage = async (currentUserId: string, matchId: string, content: string) => {
   const matchCheck = await pool.query(
     `SELECT id, user_a_id, user_b_id FROM matches

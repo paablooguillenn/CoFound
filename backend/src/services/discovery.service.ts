@@ -76,6 +76,8 @@ export const getDiscoveryFeed = async (
     location: string | null;
     entrepreneur_level: string | null;
     goal: string | null;
+    project_stage: string | null;
+    is_mentor: boolean;
     linkedin_username: string | null;
     instagram_username: string | null;
     compatibility_score: string;
@@ -101,6 +103,8 @@ export const getDiscoveryFeed = async (
        u.location,
        u.entrepreneur_level,
        u.goal,
+       u.project_stage,
+       u.is_mentor,
        u.linkedin_username,
        u.instagram_username,
        (u.boost_until IS NOT NULL AND u.boost_until > NOW()) AS is_boosted,
@@ -173,6 +177,8 @@ export const getDiscoveryFeed = async (
       location: row.location ?? '',
       entrepreneurLevel: row.entrepreneur_level ?? null,
       goal: row.goal ?? null,
+      projectStage: row.project_stage ?? null,
+      isMentor: row.is_mentor ?? false,
       linkedinUsername: row.linkedin_username ?? null,
       instagramUsername: row.instagram_username ?? null,
       compatibilityScore: Number(row.compatibility_score),

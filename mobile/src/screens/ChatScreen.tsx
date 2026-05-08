@@ -28,7 +28,7 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { AppStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
-import { getMessages, sendMessage, getMatchProfile, unmatchUser, blockUser, reportUser, markMessagesRead } from '../services/api';
+import { deleteMessage, getMessages, sendMessage, getMatchProfile, unmatchUser, blockUser, reportUser, markMessagesRead } from '../services/api';
 import { formatPresence } from '../utils/presence';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Chat'>;
@@ -130,10 +130,12 @@ const AnimatedMessage = ({
   item,
   isMe,
   formatTime,
+  onLongPress,
 }: {
   item: Message;
   isMe: boolean;
   formatTime: (d: string) => string;
+  onLongPress?: (m: Message) => void;
 }) => {
   const slideIn = useRef(new Animated.Value(isMe ? 30 : -30)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
@@ -165,7 +167,14 @@ const AnimatedMessage = ({
         },
       ]}
     >
-      <View style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}>
+      <TouchableOpacity
+        style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}
+        onLongPress={() => isMe && onLongPress?.(item)}
+        delayLongPress={400}
+        activeOpacity={isMe ? 0.7 : 1}
+        accessibilityRole={isMe ? 'button' : undefined}
+        accessibilityLabel={isMe ? 'Mantén pulsado para opciones' : undefined}
+      >
         <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextThem]}>
           {item.content}
         </Text>
@@ -182,7 +191,7 @@ const AnimatedMessage = ({
             />
           )}
         </View>
-      </View>
+      </TouchableOpacity>
     </Animated.View>
   );
 };
@@ -348,9 +357,37 @@ export const ChatScreen = ({ navigation, route }: Props) => {
     return d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
   };
 
+  const handleMessageLongPress = (msg: Message) => {
+    const ageMs = Date.now() - new Date(msg.createdAt).getTime();
+    const tooOld = ageMs > 5 * 60 * 1000;
+    Alert.alert(
+      'Mensaje',
+      tooOld
+        ? 'Solo puedes borrar mensajes durante los primeros 5 minutos tras enviarlos.'
+        : '¿Eliminar este mensaje?',
+      tooOld
+        ? [{ text: 'Cerrar', style: 'cancel' }]
+        : [
+            { text: 'Cancelar', style: 'cancel' },
+            {
+              text: 'Eliminar',
+              style: 'destructive',
+              onPress: async () => {
+                try {
+                  await deleteMessage(matchId, msg.id);
+                  setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+                } catch (err: any) {
+                  Alert.alert('Error', err?.response?.data?.message ?? 'No se pudo eliminar el mensaje.');
+                }
+              },
+            },
+          ],
+    );
+  };
+
   const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.senderId === user?.id;
-    return <AnimatedMessage item={item} isMe={isMe} formatTime={formatTime} />;
+    return <AnimatedMessage item={item} isMe={isMe} formatTime={formatTime} onLongPress={handleMessageLongPress} />;
   };
 
   const headerContent = (

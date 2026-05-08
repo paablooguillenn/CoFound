@@ -25,6 +25,7 @@ import { VerifyEmailScreen } from '../screens/VerifyEmailScreen';
 import { SupportScreen } from '../screens/SupportScreen';
 import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { MyActivityScreen } from '../screens/MyActivityScreen';
+import { ProfileVisitorsScreen } from '../screens/ProfileVisitorsScreen';
 import { AppTabsNavigator } from './AppTabsNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import { AppStackParamList } from '../types/navigation';
@@ -51,6 +52,7 @@ const AppStackNavigator = ({ initialRouteName }: { initialRouteName: keyof AppSt
     <Stack.Screen name="Support" component={SupportScreen} />
     <Stack.Screen name="UserProfile" component={UserProfileScreen} />
     <Stack.Screen name="MyActivity" component={MyActivityScreen} />
+    <Stack.Screen name="ProfileVisitors" component={ProfileVisitorsScreen} />
   </Stack.Navigator>
 );
 

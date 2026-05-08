@@ -29,7 +29,7 @@ import { MatchNotification } from '../components/MatchNotification';
 import { ProfileBadges } from '../components/ProfileBadges';
 import { SocialLinks } from '../components/SocialLinks';
 import { SuperLikeAnimation } from '../components/SuperLikeAnimation';
-import { GOAL_META } from '../utils/profileLabels';
+import { GOAL_META, PROJECT_STAGE_META } from '../utils/profileLabels';
 import { useAuth } from '../context/AuthContext';
 import { getDiscoveryProfiles, getLocations } from '../services/discovery.service';
 import { likeProfile, passProfile, rewindLastSwipe, superLikeProfile } from '../services/matches.service';
@@ -995,9 +995,32 @@ const CardContentInner = ({
           </View>
         ) : null}
 
-        {profile.entrepreneurLevel && (
-          <View style={{ marginTop: 8 }}>
-            <ProfileBadges level={profile.entrepreneurLevel} size="sm" />
+        {(profile.entrepreneurLevel || profile.projectStage || profile.isMentor) && (
+          <View style={styles.metaBadgesRow}>
+            {profile.entrepreneurLevel && <ProfileBadges level={profile.entrepreneurLevel} size="sm" />}
+            {profile.projectStage && PROJECT_STAGE_META[profile.projectStage] && (
+              <View
+                style={[
+                  styles.stageChip,
+                  { backgroundColor: PROJECT_STAGE_META[profile.projectStage].bg, borderColor: PROJECT_STAGE_META[profile.projectStage].color },
+                ]}
+              >
+                <Ionicons
+                  name={PROJECT_STAGE_META[profile.projectStage].icon as any}
+                  size={11}
+                  color={PROJECT_STAGE_META[profile.projectStage].color}
+                />
+                <Text style={[styles.stageChipText, { color: PROJECT_STAGE_META[profile.projectStage].color }]}>
+                  {PROJECT_STAGE_META[profile.projectStage].label}
+                </Text>
+              </View>
+            )}
+            {profile.isMentor && (
+              <View style={[styles.stageChip, { backgroundColor: 'rgba(201,168,76,0.15)', borderColor: '#C9A84C' }]}>
+                <Ionicons name="school" size={11} color="#C9A84C" />
+                <Text style={[styles.stageChipText, { color: '#C9A84C' }]}>Mentor</Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -1308,6 +1331,23 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+  metaBadgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+    alignItems: 'center',
+  },
+  stageChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 999,
+    borderWidth: 1,
+  },
+  stageChipText: { fontSize: 11, fontWeight: '700' },
   goalLine: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -35,6 +35,8 @@ export const getPublicUserProfile = async (currentUserId: string, targetUserId: 
     location: string | null;
     entrepreneur_level: string | null;
     goal: string | null;
+    project_stage: string | null;
+    is_mentor: boolean;
     linkedin_username: string | null;
     instagram_username: string | null;
     is_premium: boolean;
@@ -42,7 +44,7 @@ export const getPublicUserProfile = async (currentUserId: string, targetUserId: 
     email_verified: boolean;
   }>(
     `SELECT id, first_name, last_name, bio, avatar_url, interests, location,
-            entrepreneur_level, goal, linkedin_username, instagram_username,
+            entrepreneur_level, goal, project_stage, is_mentor, linkedin_username, instagram_username,
             is_premium, last_seen_at, email_verified
      FROM users
      WHERE id = $1 AND deactivated_at IS NULL`,
@@ -71,6 +73,8 @@ export const getPublicUserProfile = async (currentUserId: string, targetUserId: 
     location: row.location ?? '',
     entrepreneurLevel: row.entrepreneur_level ?? null,
     goal: row.goal ?? null,
+    projectStage: row.project_stage ?? null,
+    isMentor: row.is_mentor ?? false,
     linkedinUsername: row.linkedin_username ?? null,
     instagramUsername: row.instagram_username ?? null,
     isPremium: row.is_premium,

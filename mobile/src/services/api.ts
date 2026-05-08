@@ -77,6 +77,9 @@ export const getMessages = (matchId: string) =>
 export const sendMessage = (matchId: string, content: string) =>
   api.post(`/matches/${matchId}/messages`, { content }).then((r) => r.data);
 
+export const deleteMessage = (matchId: string, messageId: string) =>
+  api.delete(`/matches/${matchId}/messages/${messageId}`).then((r) => r.data);
+
 // --- Match actions ---
 export const getMatchProfile = (matchId: string) =>
   api.get(`/matches/${matchId}/profile`).then((r) => r.data);

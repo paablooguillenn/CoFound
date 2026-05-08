@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef } from 'react';
-import { Animated, Dimensions, Easing, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, Dimensions, Easing, Modal, Share, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 import { Avatar } from './Avatar';
@@ -249,6 +249,19 @@ export const MatchNotification = ({
             <Text style={styles.chatBtnText}>Enviar primer mensaje</Text>
           </TouchableOpacity>
 
+          <TouchableOpacity
+            onPress={() => {
+              Share.share({
+                message: `¡Acabo de hacer una conexión profesional con ${firstName} en CoFound! 🤝 https://cofound.space`,
+              }).catch(() => {});
+            }}
+            style={styles.shareBtn}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="share-social-outline" size={18} color={accent} />
+            <Text style={[styles.shareText, { color: accent }]}>Compartir</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
             <Text style={styles.closeText}>Seguir explorando</Text>
           </TouchableOpacity>
@@ -364,6 +377,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
   },
+  shareBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 10,
+  },
+  shareText: { fontSize: 13, fontWeight: '700' },
   closeBtn: {
     paddingVertical: 14,
     alignItems: 'center',

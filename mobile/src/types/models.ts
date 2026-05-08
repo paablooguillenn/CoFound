@@ -6,6 +6,7 @@ export type Skill = {
 
 export type EntrepreneurLevel = 'principiante' | 'intermedio' | 'avanzado';
 export type Goal = 'learn_skill' | 'find_partner' | 'networking';
+export type ProjectStage = 'idea' | 'mvp' | 'invoicing' | 'pivot';
 
 export type UserProfile = {
   id: string;
@@ -18,6 +19,8 @@ export type UserProfile = {
   location: string;
   entrepreneurLevel?: EntrepreneurLevel | null;
   goal?: Goal | null;
+  projectStage?: ProjectStage | null;
+  isMentor?: boolean;
   linkedinUsername?: string | null;
   instagramUsername?: string | null;
   offeredSkills: Skill[];

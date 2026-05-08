@@ -30,11 +30,12 @@ import { activateBoostRequest, getBoostStatusRequest, getCompleteness, getMyProf
 import { getMyPhotos, addPhoto, deletePhoto } from '../services/api';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
-import { EntrepreneurLevel, Goal, Skill } from '../types/models';
+import { EntrepreneurLevel, Goal, ProjectStage, Skill } from '../types/models';
 import { AppStackParamList } from '../types/navigation';
 import {
   LEVEL_OPTIONS,
   GOAL_OPTIONS,
+  PROJECT_STAGE_OPTIONS,
   SKILL_OPTIONS,
   INTEREST_AREAS,
   OTHER_OPTION,
@@ -66,6 +67,8 @@ export const ProfileScreen = () => {
   const [instagramUsername, setInstagramUsername] = useState('');
   const [entrepreneurLevel, setEntrepreneurLevel] = useState<EntrepreneurLevel | null>(null);
   const [goal, setGoal] = useState<Goal | null>(null);
+  const [projectStage, setProjectStage] = useState<ProjectStage | null>(null);
+  const [isMentor, setIsMentor] = useState<boolean>(false);
   const [saving, setSaving] = useState(false);
 
   // Datos cargados (para el modo vista)
@@ -114,6 +117,8 @@ export const ProfileScreen = () => {
       setInstagramUsername(profile.instagramUsername ?? '');
       setEntrepreneurLevel(profile.entrepreneurLevel ?? null);
       setGoal(profile.goal ?? null);
+      setProjectStage((profile as any).projectStage ?? null);
+      setIsMentor((profile as any).isMentor ?? false);
       setEmailVerified((profile as any).emailVerified ?? true);
       setProfileData({
         bio: profile.bio,
@@ -185,6 +190,8 @@ export const ProfileScreen = () => {
         location,
         entrepreneurLevel,
         goal,
+        projectStage,
+        isMentor,
         linkedinUsername: linkedinUsername.trim() ? stripSocialHandle(linkedinUsername) : null,
         instagramUsername: instagramUsername.trim() ? stripSocialHandle(instagramUsername) : null,
         offeredSkills: buildList(offeredSkills, customOfferedSkills),
@@ -585,6 +592,41 @@ export const ProfileScreen = () => {
               })}
             </View>
 
+            <Text style={styles.editSectionLabel}>Estado de tu proyecto</Text>
+            <View style={styles.optionRow}>
+              {PROJECT_STAGE_OPTIONS.map((opt) => {
+                const selected = projectStage === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.optionChip, selected && styles.optionChipActive]}
+                    onPress={() => setProjectStage(selected ? null : opt.value)}
+                  >
+                    <Ionicons name={opt.icon as any} size={14} color={selected ? colors.primary : colors.textMuted} />
+                    <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>{opt.title}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <TouchableOpacity
+              style={[styles.mentorRow, isMentor && styles.mentorRowActive]}
+              onPress={() => setIsMentor((m) => !m)}
+              activeOpacity={0.85}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: isMentor }}
+            >
+              <View style={[styles.mentorCheckbox, isMentor && styles.mentorCheckboxActive]}>
+                {isMentor && <Ionicons name="checkmark" size={14} color={colors.background} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.mentorTitle}>Disponible como mentor</Text>
+                <Text style={styles.mentorDesc}>
+                  Si tienes experiencia, marca esta casilla para aparecer como mentor en el feed.
+                </Text>
+              </View>
+            </TouchableOpacity>
+
             <Text style={styles.editSectionLabel}>Redes sociales</Text>
             <InputField
               label="Usuario de LinkedIn"
@@ -664,6 +706,21 @@ export const ProfileScreen = () => {
           >
             <Ionicons name="paper-plane-outline" size={18} color="#60A5FA" />
             <Text style={styles.menuItemText}>Mi actividad</Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => navigation.navigate('ProfileVisitors')}
+            accessibilityRole="button"
+            accessibilityLabel="Te han visitado"
+          >
+            <Ionicons name="eye-outline" size={18} color="#C9A84C" />
+            <Text style={styles.menuItemText}>Te han visitado</Text>
+            {!user?.isPremium && (
+              <View style={styles.menuPremiumBadge}>
+                <Ionicons name="diamond" size={10} color={colors.premiumStart} />
+              </View>
+            )}
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
@@ -949,6 +1006,45 @@ const styles = StyleSheet.create({
   skillPillTextDisabled: {
     color: colors.textMuted,
   },
+  menuPremiumBadge: {
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: 'rgba(201,168,76,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mentorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    padding: 14,
+    marginTop: 4,
+  },
+  mentorRowActive: {
+    borderColor: '#C9A84C',
+    backgroundColor: 'rgba(201,168,76,0.08)',
+  },
+  mentorCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 1.5,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+  },
+  mentorCheckboxActive: {
+    backgroundColor: '#C9A84C',
+    borderColor: '#C9A84C',
+  },
+  mentorTitle: { color: colors.text, fontWeight: '700', fontSize: 14 },
+  mentorDesc: { color: colors.textMuted, fontSize: 12, lineHeight: 17, marginTop: 2 },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',

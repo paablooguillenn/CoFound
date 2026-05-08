@@ -31,4 +31,5 @@ export type AppStackParamList = {
   Support: undefined;
   UserProfile: { userId: string; preview?: { firstName: string; lastName: string; avatarUrl?: string | null } };
   MyActivity: undefined;
+  ProfileVisitors: undefined;
 };

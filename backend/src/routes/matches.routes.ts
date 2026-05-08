@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
 import { getMatchesController, likeUserController, passUserController, superLikeUserController, getMatchProfileController, unmatchController, blockUserController, reportUserController, getUnreadController, markReadController, rewindController, getLikesReceivedController, getBlockedUsersController, unblockUserController, latestUnreadController, likesSentController, profileVisitorsController } from '../controllers/matches.controller';
-import { getMessagesController, sendMessageController } from '../controllers/messages.controller';
+import { deleteMessageController, getMessagesController, sendMessageController } from '../controllers/messages.controller';
 
 export const matchesRouter = Router();
 
@@ -23,4 +23,5 @@ matchesRouter.get('/:matchId/profile', getMatchProfileController);
 matchesRouter.delete('/:matchId', unmatchController);
 matchesRouter.get('/:matchId/messages', getMessagesController);
 matchesRouter.post('/:matchId/messages', sendMessageController);
+matchesRouter.delete('/:matchId/messages/:messageId', deleteMessageController);
 matchesRouter.post('/:matchId/read', markReadController);

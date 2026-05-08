@@ -85,6 +85,22 @@ export const LEVEL_OPTIONS: { value: EntrepreneurLevel; title: string; descripti
   },
 ];
 
+export type ProjectStage = 'idea' | 'mvp' | 'invoicing' | 'pivot';
+
+export const PROJECT_STAGE_META: Record<ProjectStage, { label: string; color: string; bg: string; icon: string }> = {
+  idea: { label: 'Idea', color: '#A855F7', bg: 'rgba(168,85,247,0.15)', icon: 'bulb' },
+  mvp: { label: 'MVP', color: '#60A5FA', bg: 'rgba(96,165,250,0.15)', icon: 'rocket' },
+  invoicing: { label: 'Facturando', color: '#4ADE80', bg: 'rgba(74,222,128,0.15)', icon: 'cash' },
+  pivot: { label: 'Pivot', color: '#FBBF24', bg: 'rgba(251,191,36,0.15)', icon: 'sync' },
+};
+
+export const PROJECT_STAGE_OPTIONS: { value: ProjectStage; title: string; description: string; icon: string }[] = [
+  { value: 'idea', title: 'Idea', description: 'Tengo una idea o estoy validando', icon: 'bulb' },
+  { value: 'mvp', title: 'MVP', description: 'Construyendo o testeando el primer producto', icon: 'rocket' },
+  { value: 'invoicing', title: 'Facturando', description: 'Tengo clientes o ingresos recurrentes', icon: 'cash' },
+  { value: 'pivot', title: 'Pivot', description: 'Replanteando estrategia o cambiando de mercado', icon: 'sync' },
+];
+
 export const GOAL_OPTIONS: { value: Goal; title: string; description: string; icon: string }[] = [
   {
     value: 'learn_skill',
