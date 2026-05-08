@@ -18,7 +18,7 @@ export default function App() {
         <NavigationContainer ref={navigationRef}>
           <StatusBar style="light" />
           <InAppNotificationProvider navigationRef={navigationRef}>
-            <RootNavigator />
+            <RootNavigator navigationRef={navigationRef} />
           </InAppNotificationProvider>
         </NavigationContainer>
       </AuthProvider>

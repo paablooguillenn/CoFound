@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { NavigationContainerRefWithCurrent } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../context/AuthContext';
 import { CreateProfileScreen } from '../screens/CreateProfileScreen';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { PremiumPromoScreen } from '../screens/PremiumPromoScreen';
 import { SplashScreen } from '../screens/SplashScreen';
 import { ChatScreen } from '../screens/ChatScreen';
 import { SettingsScreen } from '../screens/SettingsScreen';
@@ -51,18 +53,27 @@ const AppStackNavigator = ({ initialRouteName }: { initialRouteName: keyof AppSt
 );
 
 const ONBOARDING_KEY = 'cofound:onboardingSeen';
+const PREMIUM_PROMO_KEY = 'cofound:premiumPromoSeen';
 
-export const RootNavigator = () => {
+type RootNavigatorProps = {
+  navigationRef?: NavigationContainerRefWithCurrent<any>;
+};
+
+export const RootNavigator = ({ navigationRef }: RootNavigatorProps = {}) => {
   const { token, isLoading, profileComplete, user } = useAuth();
   const [onboardingSeen, setOnboardingSeen] = useState<boolean | null>(null);
+  const [promoSeen, setPromoSeen] = useState<boolean | null>(null);
 
   useEffect(() => {
     AsyncStorage.getItem(ONBOARDING_KEY)
       .then((v) => setOnboardingSeen(v === 'true'))
       .catch(() => setOnboardingSeen(true));
+    AsyncStorage.getItem(PREMIUM_PROMO_KEY)
+      .then((v) => setPromoSeen(v === 'true'))
+      .catch(() => setPromoSeen(true));
   }, []);
 
-  if (isLoading || onboardingSeen === null) return <SplashScreen />;
+  if (isLoading || onboardingSeen === null || promoSeen === null) return <SplashScreen />;
   if (!token) return <AuthNavigator />;
 
   // First-time users see the onboarding carousel before the profile wizard.
@@ -78,6 +89,29 @@ export const RootNavigator = () => {
   }
 
   if (!profileComplete) return <CreateProfileScreen />;
+
+  // After the wizard completes for the very first time, show the Premium upsell
+  // exactly once. The flag is persisted so it never re-appears on this device.
+  if (!promoSeen) {
+    return (
+      <PremiumPromoScreen
+        onSkip={() => {
+          AsyncStorage.setItem(PREMIUM_PROMO_KEY, 'true').catch(() => {});
+          setPromoSeen(true);
+        }}
+        onUpgrade={() => {
+          AsyncStorage.setItem(PREMIUM_PROMO_KEY, 'true').catch(() => {});
+          setPromoSeen(true);
+          // Wait for AppStackNavigator to mount, then push Pricing onto the
+          // stack so the user lands on the upgrade flow with a working back
+          // button to Tabs.
+          setTimeout(() => {
+            navigationRef?.navigate('Pricing' as never);
+          }, 80);
+        }}
+      />
+    );
+  }
 
   const initialRoute: keyof AppStackParamList = user?.emailVerified === false ? 'VerifyEmail' : 'Tabs';
   return <AppStackNavigator initialRouteName={initialRoute} />;
