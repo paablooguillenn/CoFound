@@ -439,10 +439,17 @@ export const getMatchProfile = async (currentUserId: string, matchId: string) =>
     interests: string | null;
     location: string | null;
     is_premium: boolean;
+    last_seen_at: Date | null;
+    email_verified: boolean;
+    entrepreneur_level: string | null;
+    goal: string | null;
+    linkedin_username: string | null;
+    instagram_username: string | null;
   }>(
     `SELECT
        u.id AS other_user_id, u.first_name, u.last_name, u.avatar_url,
-       u.bio, u.interests, u.location, u.is_premium
+       u.bio, u.interests, u.location, u.is_premium, u.last_seen_at, u.email_verified,
+       u.entrepreneur_level, u.goal, u.linkedin_username, u.instagram_username
      FROM matches m
      INNER JOIN users u ON u.id = CASE
        WHEN m.user_a_id = $2 THEN m.user_b_id ELSE m.user_a_id END
@@ -469,6 +476,12 @@ export const getMatchProfile = async (currentUserId: string, matchId: string) =>
     interests: row.interests ?? '',
     location: row.location ?? '',
     isPremium: row.is_premium,
+    lastSeenAt: row.last_seen_at,
+    emailVerified: row.email_verified,
+    entrepreneurLevel: row.entrepreneur_level ?? null,
+    goal: row.goal ?? null,
+    linkedinUsername: row.linkedin_username ?? null,
+    instagramUsername: row.instagram_username ?? null,
     photos,
     ...skills,
   };
@@ -553,6 +566,52 @@ export const getMatches = async (currentUserId: string) => {
       },
     };
   });
+};
+
+/**
+ * Returns the most recent unread message received by the current user, or null.
+ * Used by the mobile client to show an in-app banner notification when a new
+ * message arrives while the user is on a different screen.
+ */
+export const getLatestUnreadMessage = async (currentUserId: string) => {
+  const result = await pool.query<{
+    message_id: string;
+    match_id: string;
+    content: string;
+    created_at: Date;
+    sender_id: string;
+    first_name: string;
+    last_name: string;
+    avatar_url: string | null;
+  }>(
+    `SELECT msg.id AS message_id, msg.match_id, msg.content, msg.created_at, msg.sender_id,
+            u.first_name, u.last_name, u.avatar_url
+     FROM messages msg
+     INNER JOIN matches m ON m.id = msg.match_id
+     INNER JOIN users u ON u.id = msg.sender_id
+     WHERE (m.user_a_id = $1 OR m.user_b_id = $1)
+       AND msg.sender_id <> $1
+       AND msg.read_at IS NULL
+     ORDER BY msg.created_at DESC
+     LIMIT 1`,
+    [currentUserId],
+  );
+
+  if (!result.rowCount) return null;
+
+  const row = result.rows[0];
+  return {
+    messageId: row.message_id,
+    matchId: row.match_id,
+    content: row.content,
+    createdAt: row.created_at,
+    sender: {
+      id: row.sender_id,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      avatarUrl: row.avatar_url,
+    },
+  };
 };
 
 export const getUnreadTotal = async (currentUserId: string): Promise<number> => {

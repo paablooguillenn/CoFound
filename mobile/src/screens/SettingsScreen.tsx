@@ -62,7 +62,7 @@ export const SettingsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Configuración</Text>
@@ -94,13 +94,29 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>
 
-          <View style={styles.row}>
-            <Ionicons name="checkmark-circle" size={20} color={colors.success} />
-            <View style={styles.rowContent}>
-              <Text style={styles.rowTitle}>Verificación de cuenta</Text>
-              <Text style={[styles.rowDesc, { color: colors.success }]}>Verificada</Text>
+          {user?.emailVerified ? (
+            <View style={styles.row}>
+              <Ionicons name="checkmark-circle" size={20} color={colors.success} />
+              <View style={styles.rowContent}>
+                <Text style={styles.rowTitle}>Verificación de cuenta</Text>
+                <Text style={[styles.rowDesc, { color: colors.success }]}>Verificada</Text>
+              </View>
             </View>
-          </View>
+          ) : (
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() => navigation.navigate('VerifyEmail')}
+              activeOpacity={0.7}
+              accessibilityLabel="Verificar email"
+            >
+              <Ionicons name="alert-circle" size={20} color={'#f59e0b'} />
+              <View style={styles.rowContent}>
+                <Text style={styles.rowTitle}>Verificación de cuenta</Text>
+                <Text style={[styles.rowDesc, { color: '#f59e0b' }]}>Pendiente — pulsa para verificar</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Privacy */}
@@ -109,10 +125,10 @@ export const SettingsScreen = ({ navigation }: Props) => {
             <Text style={styles.sectionTitle}>Seguridad y datos</Text>
           </View>
           <TouchableOpacity style={styles.row} onPress={() => navigation.navigate('Setup2FA')} activeOpacity={0.7}>
-            <Ionicons name="shield-checkmark-outline" size={20} color={colors.success} />
+            <Ionicons name="shield-checkmark-outline" size={20} color={colors.textSecondary} />
             <View style={styles.rowContent}>
-              <Text style={styles.rowTitle}>Autenticación 2FA</Text>
-              <Text style={styles.rowDesc}>Capa extra de seguridad al iniciar sesión</Text>
+              <Text style={styles.rowTitle}>Autenticación en dos factores</Text>
+              <Text style={styles.rowDesc}>Añade un nivel extra de seguridad</Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>

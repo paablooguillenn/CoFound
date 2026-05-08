@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const logo = require('../../assets/logocofound.png');
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { AuthStackParamList } from '../types/navigation';
+import { useEntrance } from '../utils/useEntrance';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Register'>;
 
@@ -70,6 +71,9 @@ export const RegisterScreen = ({ navigation }: Props) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const headerAnim = useEntrance(0);
+  const formAnim = useEntrance(1);
+  const switchAnim = useEntrance(2);
 
   const handleRegister = async () => {
     const validation = validate(firstName, lastName, email, password, confirmPassword);
@@ -111,13 +115,13 @@ export const RegisterScreen = ({ navigation }: Props) => {
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
+        <Animated.View style={[styles.header, headerAnim]}>
           <Image source={logo} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>Crea tu cuenta</Text>
           <Text style={styles.subtitle}>Comienza a conectar con emprendedores</Text>
-        </View>
+        </Animated.View>
 
-        <View style={styles.form}>
+        <Animated.View style={[styles.form, formAnim]}>
           <InputField
             label="Nombre"
             value={firstName}
@@ -178,18 +182,20 @@ export const RegisterScreen = ({ navigation }: Props) => {
             error={errors.confirmPassword}
           />
           <PrimaryButton label="Registrarme" onPress={handleRegister} loading={loading} />
-        </View>
+        </Animated.View>
 
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.switchText}>
-            ¿Ya tienes cuenta?{' '}
-            <Text style={styles.switchLink}>Inicia sesión aquí</Text>
+        <Animated.View style={switchAnim}>
+          <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Volver">
+            <Text style={styles.switchText}>
+              ¿Ya tienes cuenta?{' '}
+              <Text style={styles.switchLink}>Inicia sesión aquí</Text>
+            </Text>
+          </TouchableOpacity>
+
+          <Text style={styles.terms}>
+            Al registrarte aceptas nuestros Términos de Servicio y Política de Privacidad
           </Text>
-        </TouchableOpacity>
-
-        <Text style={styles.terms}>
-          Al registrarte aceptas nuestros Términos de Servicio y Política de Privacidad
-        </Text>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

@@ -4,6 +4,9 @@ export type Skill = {
   level?: number;
 };
 
+export type EntrepreneurLevel = 'principiante' | 'intermedio' | 'avanzado';
+export type Goal = 'learn_skill' | 'find_partner' | 'networking';
+
 export type UserProfile = {
   id: string;
   email?: string;
@@ -13,6 +16,10 @@ export type UserProfile = {
   bio: string;
   interests: string;
   location: string;
+  entrepreneurLevel?: EntrepreneurLevel | null;
+  goal?: Goal | null;
+  linkedinUsername?: string | null;
+  instagramUsername?: string | null;
   offeredSkills: Skill[];
   learningSkills: Skill[];
 };
@@ -49,4 +56,5 @@ export type AuthUser = {
   lastName: string;
   avatarUrl?: string | null;
   isPremium?: boolean;
+  emailVerified?: boolean;
 };

@@ -15,6 +15,12 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+let onUnauthorized: (() => void) | null = null;
+
+export const setOnUnauthorized = (handler: (() => void) | null) => {
+  onUnauthorized = handler;
+};
+
 api.interceptors.response.use(
   (response) => {
     console.log(`[CoFound] Response ${response.status}`);
@@ -22,6 +28,13 @@ api.interceptors.response.use(
   },
   (error) => {
     console.log('[CoFound] API Error:', error.message, error.code, error.config?.url);
+    if (error.response?.status === 401) {
+      const url = error.config?.url ?? '';
+      const isAuthFlow = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/forgot-password') || url.includes('/auth/reset-password');
+      if (!isAuthFlow && onUnauthorized) {
+        onUnauthorized();
+      }
+    }
     return Promise.reject(error);
   },
 );
@@ -56,6 +69,25 @@ export const reportUser = (userId: string, reason: string) =>
 
 export const getUnreadCount = () =>
   api.get('/matches/unread').then((r) => r.data.unreadCount as number);
+
+export type LatestUnread = {
+  messageId: string;
+  matchId: string;
+  content: string;
+  createdAt: string;
+  sender: { id: string; firstName: string; lastName: string; avatarUrl: string | null };
+};
+
+export const getLatestUnread = () =>
+  api.get('/matches/latest-unread').then((r) => r.data.message as LatestUnread | null);
+
+export const sendSupportMessage = (subject: string, body: string) =>
+  api
+    .post<{ success: boolean; ticketId: string; createdAt: string }>('/support', { subject, body })
+    .then((r) => r.data);
+
+export const getPublicUserProfile = (userId: string) =>
+  api.get(`/users/${userId}`).then((r) => r.data);
 
 export const markMessagesRead = (matchId: string) =>
   api.post(`/matches/${matchId}/read`).then((r) => r.data);

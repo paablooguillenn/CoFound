@@ -18,7 +18,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { Avatar } from '../components/Avatar';
+import { LoadingDots } from '../components/LoadingDots';
 import { MatchNotification } from '../components/MatchNotification';
+import { ProfileBadges } from '../components/ProfileBadges';
+import { SocialLinks } from '../components/SocialLinks';
+import { SuperLikeAnimation } from '../components/SuperLikeAnimation';
+import { GOAL_META } from '../utils/profileLabels';
 import { useAuth } from '../context/AuthContext';
 import { getDiscoveryProfiles, getLocations } from '../services/discovery.service';
 import { likeProfile, passProfile, rewindLastSwipe, superLikeProfile } from '../services/matches.service';
@@ -45,9 +50,11 @@ export const ExploreScreen = () => {
   profilesRef.current = profiles;
   const currentIndexRef = useRef(currentIndex);
   currentIndexRef.current = currentIndex;
+  const initialLoadedRef = useRef(false);
   const [showLimitModal, setShowLimitModal] = useState(false);
   const [showSuperPremiumModal, setShowSuperPremiumModal] = useState(false);
   const [showSuperLimitModal, setShowSuperLimitModal] = useState(false);
+  const [showSuperBurst, setShowSuperBurst] = useState(false);
 
   const [matchModal, setMatchModal] = useState<{
     visible: boolean;
@@ -55,13 +62,53 @@ export const ExploreScreen = () => {
     matchId: string;
     avatarUrl: string | null;
     isSuper: boolean;
+    commonSkills: string[];
   }>({
     visible: false,
     name: '',
     matchId: '',
     avatarUrl: null,
     isSuper: false,
+    commonSkills: [],
   });
+
+  // Cache of the current user's own skills, loaded once on mount. Used to
+  // compute common skills with a match for the "Sinergia detectada" card.
+  const myOfferedSkillsRef = useRef<Set<string>>(new Set());
+  const myLearnSkillsRef = useRef<Set<string>>(new Set());
+  const [mySkillsReady, setMySkillsReady] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { getMyProfile } = await import('../services/profile.service');
+        const me = await getMyProfile();
+        myOfferedSkillsRef.current = new Set(
+          (me.offeredSkills ?? []).map((s) => s.name.toLowerCase()),
+        );
+        myLearnSkillsRef.current = new Set(
+          (me.learningSkills ?? []).map((s) => s.name.toLowerCase()),
+        );
+      } catch {
+        /* feed still works without this — sinergia card just stays empty */
+      } finally {
+        setMySkillsReady(true);
+      }
+    })();
+  }, []);
+
+  // Returns the names of skills the other person OFFERS that I want to learn,
+  // plus the skills the other LEARNS that I offer. These are the synergies.
+  const computeCommonSkills = useCallback((otherProfile: DiscoveryUser): string[] => {
+    const matches: string[] = [];
+    for (const s of otherProfile.offeredSkills) {
+      if (myLearnSkillsRef.current.has(s.name.toLowerCase())) matches.push(s.name);
+    }
+    for (const s of otherProfile.learningSkills) {
+      if (myOfferedSkillsRef.current.has(s.name.toLowerCase())) matches.push(s.name);
+    }
+    return Array.from(new Set(matches));
+  }, []);
 
   // Location filter (premium only)
   const [locations, setLocations] = useState<string[]>([]);
@@ -88,11 +135,15 @@ export const ExploreScreen = () => {
 
   const loadProfiles = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only show the full-screen loader on the very first fetch.
+      // Subsequent refreshes (tab switches, filter changes) load silently in the
+      // background to keep the swipe deck visible and responsive.
+      if (!initialLoadedRef.current) setLoading(true);
       const data = await getDiscoveryProfiles(selectedLocation);
       setProfiles(data);
       setCurrentIndex(0);
       position.setValue({ x: 0, y: 0 });
+      initialLoadedRef.current = true;
     } catch {
       Alert.alert('Error', 'No se pudieron cargar los perfiles.');
     } finally {
@@ -109,9 +160,23 @@ export const ExploreScreen = () => {
 
   useFocusEffect(
     useCallback(() => {
-      loadProfiles();
+      // First focus, or we ran out of profiles → fetch.
+      // Otherwise keep the current swipe deck so tab switches feel instant.
+      const hasUnswipedProfile =
+        profilesRef.current.length > 0 &&
+        currentIndexRef.current < profilesRef.current.length;
+      if (!initialLoadedRef.current || !hasUnswipedProfile) {
+        loadProfiles();
+      }
     }, [loadProfiles]),
   );
+
+  // Refetch when location filter changes after the initial load.
+  useEffect(() => {
+    if (initialLoadedRef.current) {
+      loadProfiles();
+    }
+  }, [selectedLocation, loadProfiles]);
 
   useEffect(() => {
     animateEntrance();
@@ -136,6 +201,7 @@ export const ExploreScreen = () => {
             matchId: result.matchId,
             avatarUrl: profile.avatarUrl ?? null,
             isSuper: false,
+            commonSkills: computeCommonSkills(profile),
           });
         }
       })
@@ -159,11 +225,11 @@ export const ExploreScreen = () => {
     } catch (err: any) {
       const status = err?.response?.status;
       if (status === 404) {
-        Alert.alert('Sin swipes', 'No hay nada que deshacer.');
+        Alert.alert('Sin acciones', 'No hay nada que deshacer.');
       } else if (status === 403) {
         setShowSuperPremiumModal(true);
       } else {
-        Alert.alert('Error', 'No se pudo deshacer el último swipe.');
+        Alert.alert('Error', 'No se pudo deshacer la última acción.');
       }
     }
   };
@@ -177,12 +243,28 @@ export const ExploreScreen = () => {
       return;
     }
 
-    // Advance the card immediately with a rightward swipe animation
-    Animated.timing(position, {
-      toValue: { x: SCREEN_WIDTH * 1.5, y: -200 },
-      duration: SWIPE_OUT_DURATION,
-      useNativeDriver: true,
-    }).start(() => {
+    // Trigger the burst overlay (star + sparks + halo)
+    setShowSuperBurst(true);
+
+    // Launch the card up and slightly back instead of sideways — feels like
+    // "shooting it into the sky".
+    Animated.parallel([
+      Animated.timing(position, {
+        toValue: { x: 0, y: -SCREEN_WIDTH * 2 },
+        duration: 600,
+        useNativeDriver: true,
+      }),
+      Animated.spring(nextCardScale, {
+        toValue: 1,
+        friction: 6,
+        useNativeDriver: true,
+      }),
+      Animated.timing(nextCardOpacity, {
+        toValue: 1,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
       advanceToNext();
     });
 
@@ -196,6 +278,7 @@ export const ExploreScreen = () => {
             matchId: result.matchId,
             avatarUrl: profile.avatarUrl ?? null,
             isSuper: true,
+            commonSkills: computeCommonSkills(profile),
           });
         }
       })
@@ -307,18 +390,15 @@ export const ExploreScreen = () => {
 
   const entranceScale = cardEntrance.interpolate({
     inputRange: [0, 1],
-    outputRange: [0.95, 1],
-  });
-
-  const entranceOpacity = cardEntrance.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.5, 1],
+    outputRange: [0.96, 1],
   });
 
   const current = profiles[currentIndex];
   const next = profiles[currentIndex + 1];
 
-  if (loading) {
+  // Wait for both profiles AND my own skills to load before rendering the
+  // first card so "Sinergia detectada" reflects accurate common skills.
+  if (loading || !mySkillsReady) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
@@ -375,6 +455,7 @@ export const ExploreScreen = () => {
 
   return (
     <View style={styles.container}>
+      <SuperLikeAnimation visible={showSuperBurst} onComplete={() => setShowSuperBurst(false)} />
       {/* Header */}
       <SafeAreaView style={styles.headerOverlay} pointerEvents="box-none">
         <View style={styles.header}>
@@ -389,11 +470,7 @@ export const ExploreScreen = () => {
             )}
           </View>
           <Text style={styles.headerTitle}>CoFound</Text>
-          <View style={styles.headerRight}>
-            <Text style={styles.counterText}>
-              {currentIndex + 1} / {profiles.length}
-            </Text>
-          </View>
+          <View style={styles.headerRight} />
         </View>
       </SafeAreaView>
 
@@ -411,7 +488,7 @@ export const ExploreScreen = () => {
               },
             ]}
           >
-            <CardContent profile={next} />
+            <CardContent profile={next} commonSkills={computeCommonSkills(next)} />
           </Animated.View>
         )}
 
@@ -426,21 +503,20 @@ export const ExploreScreen = () => {
                 { rotate },
                 { scale: entranceScale },
               ],
-              opacity: entranceOpacity,
             },
           ]}
           {...panResponder.panHandlers}
         >
-          <CardContent profile={current} />
+          <CardContent profile={current} commonSkills={computeCommonSkills(current)} />
 
-          {/* LIKE stamp overlay */}
+          {/* INTERESA stamp overlay (swipe right) */}
           <Animated.View style={[styles.stamp, styles.stampLike, { opacity: likeOpacity }]}>
-            <Text style={styles.stampLikeText}>LIKE</Text>
+            <Text style={styles.stampLikeText}>INTERESA</Text>
           </Animated.View>
 
-          {/* NOPE stamp overlay */}
+          {/* OMITIR stamp overlay (swipe left) */}
           <Animated.View style={[styles.stamp, styles.stampNope, { opacity: nopeOpacity }]}>
-            <Text style={styles.stampNopeText}>NOPE</Text>
+            <Text style={styles.stampNopeText}>OMITIR</Text>
           </Animated.View>
         </Animated.View>
       </View>
@@ -473,6 +549,8 @@ export const ExploreScreen = () => {
           onPress={handleRewind}
           disabled={liking}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Deshacer última decisión"
         >
           <Ionicons name="refresh" size={22} color="#C9A84C" />
         </TouchableOpacity>
@@ -482,8 +560,10 @@ export const ExploreScreen = () => {
           onPress={() => doSwipeRef.current('left')}
           disabled={liking}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Omitir perfil"
         >
-          <Ionicons name="close" size={32} color="#FF6B6B" />
+          <Ionicons name="close" size={32} color={colors.textMuted} />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -491,8 +571,10 @@ export const ExploreScreen = () => {
           onPress={handleSuperLike}
           disabled={liking}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Conexión prioritaria"
         >
-          <Ionicons name="star" size={24} color="#60A5FA" />
+          <Ionicons name="rocket" size={24} color="#C9A84C" />
         </TouchableOpacity>
 
         <TouchableOpacity
@@ -500,8 +582,10 @@ export const ExploreScreen = () => {
           onPress={() => doSwipeRef.current('right')}
           disabled={liking}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Mostrar interés en este perfil"
         >
-          <Ionicons name="heart" size={32} color="#4ADE80" />
+          <Ionicons name="flash" size={32} color="#4ADE80" />
         </TouchableOpacity>
       </View>
 
@@ -510,11 +594,11 @@ export const ExploreScreen = () => {
         <View style={styles.limitOverlay}>
           <View style={styles.limitCard}>
             <View style={styles.limitIconCircle}>
-              <Ionicons name="heart" size={36} color={colors.pink} />
+              <Ionicons name="flash" size={36} color="#4ADE80" />
             </View>
-            <Text style={styles.limitTitle}>Has llegado al límite</Text>
+            <Text style={styles.limitTitle}>Has llegado al límite diario</Text>
             <Text style={styles.limitText}>
-              Has usado tus 5 swipes diarios. Desbloquea swipes ilimitados con CoFound Premium.
+              Has usado tus 5 conexiones diarias. Desbloquea conexiones ilimitadas con CoFound Premium.
             </Text>
             <TouchableOpacity
               style={styles.limitPremiumBtn}
@@ -534,7 +618,11 @@ export const ExploreScreen = () => {
         visible={matchModal.visible}
         matchName={matchModal.name}
         matchAvatar={matchModal.avatarUrl}
+        myFirstName={user?.firstName}
+        myLastName={user?.lastName}
+        myAvatarUrl={user?.avatarUrl ?? null}
         isSuper={matchModal.isSuper}
+        commonSkills={matchModal.commonSkills}
         onChat={() => {
           setMatchModal((m) => ({ ...m, visible: false }));
           navigation.navigate('Chat', { matchId: matchModal.matchId, matchName: matchModal.name, matchAvatar: matchModal.avatarUrl });
@@ -553,7 +641,7 @@ export const ExploreScreen = () => {
             </View>
             <Text style={styles.limitTitle}>Función Premium</Text>
             <Text style={styles.limitText}>
-              Esto requiere CoFound Premium: super-likes, deshacer swipes, ver quién te ha dado like, filtros avanzados y más.
+              Esto requiere CoFound Premium: conexiones prioritarias, deshacer última decisión, ver quién quiere conectar contigo, filtros avanzados y más.
             </Text>
             <TouchableOpacity
               style={styles.limitPremiumBtn}
@@ -576,9 +664,9 @@ export const ExploreScreen = () => {
             <View style={[styles.limitIconCircle, { backgroundColor: 'rgba(96,165,250,0.16)' }]}>
               <Ionicons name="star" size={36} color="#60A5FA" />
             </View>
-            <Text style={styles.limitTitle}>Sin super-likes por hoy</Text>
+            <Text style={styles.limitTitle}>Sin conexiones prioritarias por hoy</Text>
             <Text style={styles.limitText}>
-              Ya has usado tus 5 super-likes diarios. Vuelve mañana para seguir destacando entre los perfiles que más te interesan.
+              Ya has usado tus 5 conexiones prioritarias diarias. Vuelve mañana para seguir destacando entre los perfiles que más te interesan.
             </Text>
             <TouchableOpacity onPress={() => setShowSuperLimitModal(false)} style={styles.limitPremiumBtn}>
               <Text style={styles.limitPremiumBtnText}>Entendido</Text>
@@ -592,7 +680,13 @@ export const ExploreScreen = () => {
 
 // ─── Card Content Component ───────────────────────────────────────────────────
 
-const CardContent = ({ profile }: { profile: DiscoveryUser }) => {
+const CardContent = ({
+  profile,
+  commonSkills,
+}: {
+  profile: DiscoveryUser;
+  commonSkills: string[];
+}) => {
   const [expanded, setExpanded] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
 
@@ -650,11 +744,19 @@ const CardContent = ({ profile }: { profile: DiscoveryUser }) => {
         </View>
       )}
 
-      {/* Super-like received banner */}
+      {/* Priority connection received banner */}
       {profile.superLikedByThem && (
         <View style={styles.superLikeBanner} pointerEvents="none">
-          <Ionicons name="star" size={14} color="#60A5FA" />
-          <Text style={styles.superLikeBannerText}>Te ha dado super-like</Text>
+          <Ionicons name="rocket" size={14} color="#C9A84C" />
+          <Text style={styles.superLikeBannerText}>Conexión prioritaria recibida</Text>
+        </View>
+      )}
+
+      {/* Boost badge (top-right) */}
+      {profile.isBoosted && (
+        <View style={styles.boostBadge} pointerEvents="none">
+          <Ionicons name="rocket" size={14} color="#fff" />
+          <Text style={styles.boostBadgeText}>Destacado</Text>
         </View>
       )}
 
@@ -665,11 +767,14 @@ const CardContent = ({ profile }: { profile: DiscoveryUser }) => {
         style={styles.bottomOverlay}
         pointerEvents="box-none"
       >
-        {/* Compatibility badge */}
+        {/* Compatibility badge with synergy count */}
         {profile.compatibilityScore > 0 && (
           <View style={styles.compatBadge}>
             <Ionicons name="sparkles" size={12} color="#4ADE80" />
-            <Text style={styles.compatText}>{profile.compatibilityScore}% compatible</Text>
+            <Text style={styles.compatText}>
+              {profile.compatibilityScore}% compatible
+              {commonSkills.length > 0 && ` · ${commonSkills.length} ${commonSkills.length === 1 ? 'sinergia' : 'sinergias'}`}
+            </Text>
           </View>
         )}
 
@@ -677,12 +782,54 @@ const CardContent = ({ profile }: { profile: DiscoveryUser }) => {
           {profile.firstName} {profile.lastName}
         </Text>
 
+        {/* "Busca: [goal]" prominent line under name */}
+        {profile.goal && (
+          <View style={styles.goalLine}>
+            <Ionicons name={GOAL_META[profile.goal].icon as any} size={14} color={GOAL_META[profile.goal].color} />
+            <Text style={[styles.goalLineText, { color: GOAL_META[profile.goal].color }]}>
+              {GOAL_META[profile.goal].label}
+            </Text>
+          </View>
+        )}
+
         {profile.location ? (
           <View style={styles.locationRow}>
             <Ionicons name="location" size={14} color="rgba(255,255,255,0.6)" />
             <Text style={styles.locationText}>{profile.location}</Text>
           </View>
         ) : null}
+
+        {profile.entrepreneurLevel && (
+          <View style={{ marginTop: 8 }}>
+            <ProfileBadges level={profile.entrepreneurLevel} size="sm" />
+          </View>
+        )}
+
+        {(profile.linkedinUsername || profile.instagramUsername) && (
+          <View style={{ marginTop: 8 }}>
+            <SocialLinks
+              linkedinUsername={profile.linkedinUsername}
+              instagramUsername={profile.instagramUsername}
+              size={32}
+            />
+          </View>
+        )}
+
+        {/* Compact skills preview (always visible, even when collapsed) */}
+        {!expanded && (profile.offeredSkills.length > 0 || profile.learningSkills.length > 0) && (
+          <View style={styles.compactSkills}>
+            {profile.offeredSkills.slice(0, 2).map((s) => (
+              <View key={`o-${s.name}`} style={styles.compactSkillOffer}>
+                <Text style={styles.compactSkillText}>{s.name}</Text>
+              </View>
+            ))}
+            {profile.learningSkills.slice(0, 1).map((s) => (
+              <View key={`l-${s.name}`} style={styles.compactSkillLearn}>
+                <Text style={styles.compactSkillText}>{s.name}</Text>
+              </View>
+            ))}
+          </View>
+        )}
 
         <TouchableOpacity onPress={() => setExpanded(!expanded)} activeOpacity={0.8}>
           <Text style={styles.bioPreview} numberOfLines={expanded ? 10 : 2}>
@@ -723,46 +870,6 @@ const CardContent = ({ profile }: { profile: DiscoveryUser }) => {
           </View>
         )}
       </LinearGradient>
-    </View>
-  );
-};
-
-// ─── Loading Dots Animation ───────────────────────────────────────────────────
-
-const LoadingDots = () => {
-  const dot1 = useRef(new Animated.Value(0)).current;
-  const dot2 = useRef(new Animated.Value(0)).current;
-  const dot3 = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    const animate = (dot: Animated.Value, delay: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.delay(delay),
-          Animated.timing(dot, { toValue: 1, duration: 400, useNativeDriver: true }),
-          Animated.timing(dot, { toValue: 0, duration: 400, useNativeDriver: true }),
-        ]),
-      );
-    animate(dot1, 0).start();
-    animate(dot2, 150).start();
-    animate(dot3, 300).start();
-  }, [dot1, dot2, dot3]);
-
-  const dotStyle = (anim: Animated.Value) => ({
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: colors.primary,
-    marginHorizontal: 4,
-    opacity: anim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1] }),
-    transform: [{ scale: anim.interpolate({ inputRange: [0, 1], outputRange: [0.8, 1.2] }) }],
-  });
-
-  return (
-    <View style={{ flexDirection: 'row' }}>
-      <Animated.View style={dotStyle(dot1)} />
-      <Animated.View style={dotStyle(dot2)} />
-      <Animated.View style={dotStyle(dot3)} />
     </View>
   );
 };
@@ -816,7 +923,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   filterBtnActive: {
-    backgroundColor: colors.pink,
+    backgroundColor: '#4ADE80',
   },
 
   // Card Stack
@@ -866,7 +973,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
   },
 
-  // Super-like received banner
+  // Priority connection received banner
   superLikeBanner: {
     position: 'absolute',
     top: 70,
@@ -874,18 +981,42 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(96,165,250,0.22)',
+    backgroundColor: 'rgba(201,168,76,0.22)',
     borderWidth: 1,
-    borderColor: 'rgba(96,165,250,0.5)',
+    borderColor: 'rgba(201,168,76,0.55)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,
     zIndex: 12,
   },
   superLikeBannerText: {
-    color: '#93C5FD',
+    color: '#FBBF24',
     fontSize: 12,
     fontWeight: '700',
+  },
+  boostBadge: {
+    position: 'absolute',
+    top: 70,
+    right: 18,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: 'rgba(168,85,247,0.95)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 999,
+    zIndex: 12,
+    shadowColor: '#A855F7',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  boostBadgeText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 0.4,
   },
 
   // Stamp overlays
@@ -956,6 +1087,16 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
+  goalLine: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 6,
+  },
+  goalLineText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -967,6 +1108,33 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.6)',
     fontWeight: '500',
   },
+  compactSkills: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 10,
+  },
+  compactSkillOffer: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(74,222,128,0.6)',
+    backgroundColor: 'rgba(74,222,128,0.18)',
+  },
+  compactSkillLearn: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(96,165,250,0.6)',
+    backgroundColor: 'rgba(96,165,250,0.18)',
+  },
+  compactSkillText: {
+    color: '#fff',
+    fontSize: 11,
+    fontWeight: '700',
+  },
   bioPreview: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
@@ -974,7 +1142,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   readMore: {
-    color: colors.pink,
+    color: '#4ADE80',
     fontSize: 14,
     fontWeight: '800',
     marginTop: 6,
@@ -1172,7 +1340,7 @@ const styles = StyleSheet.create({
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: colors.pinkLight,
+    backgroundColor: 'rgba(74,222,128,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },

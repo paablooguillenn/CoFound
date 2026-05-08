@@ -36,29 +36,35 @@ export const registerUser = async ({ email, password, firstName, lastName }: Reg
     last_name: string;
     avatar_url: string | null;
     is_premium: boolean;
+    email_verified: boolean;
   }>(
     `INSERT INTO users (email, password_hash, first_name, last_name)
      VALUES ($1, $2, $3, $4)
-     RETURNING id, email, first_name, last_name, avatar_url, is_premium`,
+     RETURNING id, email, first_name, last_name, avatar_url, is_premium, email_verified`,
     [normalizedEmail, passwordHash, firstName.trim(), lastName.trim()],
   );
 
   const user = result.rows[0];
 
-  // Auto-like: a random sample of existing users likes the new user so matches feel organic
+  // Seed-only auto-like: a small sample of existing seed users (3) shows
+  // interest in the new user so the "Solicitudes" screen isn't empty for the
+  // demo. Restricted to the @cofound-seed.com domain so real users don't get
+  // synthetic likes added by mistake.
   await pool.query(
     `INSERT INTO user_likes (sender_id, receiver_id)
      SELECT id, $1 FROM users
      WHERE id <> $1
+       AND email LIKE '%@cofound-seed.com'
      ORDER BY RANDOM()
-     LIMIT 10
+     LIMIT 3
      ON CONFLICT DO NOTHING`,
     [user.id],
   );
 
   // Fire-and-forget: send email verification code (don't block registration if email fails)
   sendVerificationEmail(user.id, user.email, user.first_name).catch((err) => {
-    console.error('[register] Failed to send verification email:', err.message);
+    console.error(`[register] Failed to send verification email to ${user.email}:`, err.message);
+    console.error('[register] Check that RESEND_API_KEY is set and EMAIL_FROM uses a verified domain.');
   });
 
   return {
@@ -70,6 +76,7 @@ export const registerUser = async ({ email, password, firstName, lastName }: Reg
       lastName: user.last_name,
       avatarUrl: user.avatar_url ?? null,
       isPremium: user.is_premium ?? false,
+      emailVerified: user.email_verified ?? false,
     },
   };
 };
@@ -97,11 +104,24 @@ export const sendVerificationEmail = async (userId: string, email: string, first
     [userId, codeHash, expiresAt],
   );
 
-  await sendEmail({
-    to: email,
-    subject: `${code} es tu código de verificación de CoFound`,
-    html: renderEmailVerification(firstName, code),
-  });
+  try {
+    await sendEmail({
+      to: email,
+      subject: `${code} es tu código de verificación de CoFound`,
+      html: renderEmailVerification(firstName, code),
+    });
+  } catch (err) {
+    // Email delivery failed (Resend rejection, sandbox limits, etc.).
+    // Log the code to the server console so the user can verify manually
+    // from Railway logs while we fix the email pipeline.
+    console.warn('\n┌─────────────────────────────────────────────────────────┐');
+    console.warn('│  EMAIL FAILED — verification code logged for manual use │');
+    console.warn('├─────────────────────────────────────────────────────────┤');
+    console.warn(`│  user:  ${email.padEnd(47)} │`);
+    console.warn(`│  CODE:  ${code}                                                  │`);
+    console.warn('└─────────────────────────────────────────────────────────┘\n');
+    throw err;
+  }
 };
 
 export const requestEmailVerification = async (userId: string) => {
@@ -256,8 +276,10 @@ export const loginUser = async ({ email, password }: LoginInput) => {
     avatar_url: string | null;
     password_hash: string;
     is_premium: boolean;
+    deactivated_at: Date | null;
+    email_verified: boolean;
   }>(
-    `SELECT id, email, first_name, last_name, avatar_url, password_hash, is_premium
+    `SELECT id, email, first_name, last_name, avatar_url, password_hash, is_premium, deactivated_at, email_verified
      FROM users
      WHERE email = $1`,
     [normalizedEmail],
@@ -274,8 +296,21 @@ export const loginUser = async ({ email, password }: LoginInput) => {
     throw new AppError('Invalid credentials', 401);
   }
 
+  const wasDeactivated = user.deactivated_at !== null;
+  if (wasDeactivated) {
+    await pool.query(
+      `UPDATE users SET deactivated_at = NULL, last_seen_at = NOW(), updated_at = NOW() WHERE id = $1`,
+      [user.id],
+    );
+  } else {
+    // Refresh last-seen on every successful login so presence is accurate
+    // immediately after returning to the app.
+    await pool.query(`UPDATE users SET last_seen_at = NOW() WHERE id = $1`, [user.id]);
+  }
+
   return {
     token: signToken({ userId: user.id, email: user.email }),
+    reactivated: wasDeactivated,
     user: {
       id: user.id,
       email: user.email,
@@ -283,6 +318,7 @@ export const loginUser = async ({ email, password }: LoginInput) => {
       lastName: user.last_name,
       avatarUrl: user.avatar_url ?? null,
       isPremium: user.is_premium ?? false,
+      emailVerified: user.email_verified ?? false,
     },
   };
 };

@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,7 +59,7 @@ export const LikesReceivedScreen = () => {
         </View>
         <Text style={styles.gateTitle}>Solo para Premium</Text>
         <Text style={styles.gateText}>
-          Descubre quién te ha dado like sin necesidad de hacer swipe a ciegas.
+          Descubre quién quiere conectar contigo sin tener que explorar a ciegas.
         </Text>
         <TouchableOpacity style={styles.gateBtn} onPress={() => navigation.navigate('Pricing')}>
           <Ionicons name="diamond" size={16} color={colors.background} />
@@ -72,10 +72,10 @@ export const LikesReceivedScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Te han dado like</Text>
+        <Text style={styles.headerTitle}>Solicitudes de conexión</Text>
         <View style={{ width: 22 }} />
       </View>
 
@@ -85,9 +85,11 @@ export const LikesReceivedScreen = () => {
         </View>
       ) : likes.length === 0 ? (
         <View style={styles.center}>
-          <Ionicons name="heart-outline" size={48} color={colors.textMuted} />
-          <Text style={styles.emptyTitle}>Aún no tienes likes</Text>
-          <Text style={styles.emptyText}>Sigue completando tu perfil y haciendo swipe.</Text>
+          <Ionicons name="person-add-outline" size={48} color={colors.textMuted} />
+          <Text style={styles.emptyTitle}>Sin solicitudes pendientes</Text>
+          <Text style={styles.emptyText}>
+            Cuando alguien muestre interés en tu perfil, aparecerá aquí.
+          </Text>
         </View>
       ) : (
         <FlatList
@@ -103,7 +105,22 @@ export const LikesReceivedScreen = () => {
           }
           ItemSeparatorComponent={() => <View style={{ height: spacing.sm }} />}
           renderItem={({ item }) => (
-            <View style={styles.row}>
+            <TouchableOpacity
+              style={styles.row}
+              onPress={() =>
+                navigation.navigate('UserProfile', {
+                  userId: item.id,
+                  preview: {
+                    firstName: item.firstName,
+                    lastName: item.lastName,
+                    avatarUrl: item.avatarUrl,
+                  },
+                })
+              }
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel={`Ver perfil de ${item.firstName} ${item.lastName}`}
+            >
               <View style={[styles.avatarWrap, item.isSuper && styles.avatarSuper]}>
                 <Avatar
                   firstName={item.firstName}
@@ -113,7 +130,7 @@ export const LikesReceivedScreen = () => {
                 />
                 {item.isSuper && (
                   <View style={styles.superBadge}>
-                    <Ionicons name="star" size={12} color="#fff" />
+                    <Ionicons name="rocket" size={12} color="#fff" />
                   </View>
                 )}
               </View>
@@ -130,10 +147,18 @@ export const LikesReceivedScreen = () => {
                   <Text style={styles.bio} numberOfLines={2}>{item.bio}</Text>
                 ) : null}
               </View>
-              <TouchableOpacity style={styles.likeBack} onPress={() => handleLikeBack(item)} activeOpacity={0.7}>
-                <Ionicons name="heart" size={22} color={colors.pink} />
-              </TouchableOpacity>
-            </View>
+              <Pressable
+                style={styles.likeBack}
+                onPress={(e) => {
+                  e.stopPropagation();
+                  handleLikeBack(item);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Aceptar conexión"
+              >
+                <Ionicons name="person-add" size={22} color="#3B82F6" />
+              </Pressable>
+            </TouchableOpacity>
           )}
         />
       )}
@@ -192,9 +217,9 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.pinkLight,
+    backgroundColor: 'rgba(59,130,246,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(233,30,99,0.3)',
+    borderColor: 'rgba(59,130,246,0.4)',
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.lg, gap: spacing.sm },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: colors.text, marginTop: spacing.sm },

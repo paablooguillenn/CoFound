@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS users (
   avatar_url TEXT,
   interests TEXT,
   location VARCHAR(120),
+  entrepreneur_level VARCHAR(20),
+  goal VARCHAR(20),
+  linkedin_username VARCHAR(120),
+  instagram_username VARCHAR(120),
   is_premium BOOLEAN NOT NULL DEFAULT FALSE,
   premium_plan VARCHAR(20),
   premium_since TIMESTAMP WITH TIME ZONE,
@@ -30,6 +34,26 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Idempotent column additions for already-running databases.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS entrepreneur_level VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS goal VARCHAR(20);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS linkedin_username VARCHAR(120);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS instagram_username VARCHAR(120);
+
+-- Support / contact messages sent to the team from inside the app.
+CREATE TABLE IF NOT EXISTS support_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE SET NULL,
+  email VARCHAR(255) NOT NULL,
+  subject VARCHAR(200) NOT NULL,
+  body TEXT NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'open',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  resolved_at TIMESTAMP WITH TIME ZONE
+);
+CREATE INDEX IF NOT EXISTS idx_support_user ON support_messages(user_id);
+CREATE INDEX IF NOT EXISTS idx_support_status ON support_messages(status, created_at DESC);
 
 CREATE TABLE IF NOT EXISTS email_verification_tokens (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),

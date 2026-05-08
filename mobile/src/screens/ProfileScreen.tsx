@@ -20,14 +20,17 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Avatar } from '../components/Avatar';
 import { InputField } from '../components/InputField';
 import { PrimaryButton } from '../components/PrimaryButton';
+import { ProfileBadges } from '../components/ProfileBadges';
 import { SkillBadge } from '../components/SkillBadge';
+import { SocialLinks, stripSocialHandle } from '../components/SocialLinks';
 import { useAuth } from '../context/AuthContext';
 import { activateBoostRequest, getBoostStatusRequest, getCompleteness, getMyProfile, updateMyProfile, requestEmailVerificationCode, BoostStatus, Completeness } from '../services/profile.service';
 import { getMyPhotos, addPhoto, deletePhoto } from '../services/api';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
-import { Skill } from '../types/models';
+import { EntrepreneurLevel, Goal, Skill } from '../types/models';
 import { AppStackParamList } from '../types/navigation';
+import { LEVEL_OPTIONS, GOAL_OPTIONS } from '../utils/profileLabels';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -51,6 +54,10 @@ export const ProfileScreen = () => {
   const [location, setLocation] = useState('');
   const [offeredSkills, setOfferedSkills] = useState('');
   const [learningSkills, setLearningSkills] = useState('');
+  const [linkedinUsername, setLinkedinUsername] = useState('');
+  const [instagramUsername, setInstagramUsername] = useState('');
+  const [entrepreneurLevel, setEntrepreneurLevel] = useState<EntrepreneurLevel | null>(null);
+  const [goal, setGoal] = useState<Goal | null>(null);
   const [saving, setSaving] = useState(false);
 
   // Datos cargados (para el modo vista)
@@ -76,6 +83,10 @@ export const ProfileScreen = () => {
       setOfferedSkills(profile.offeredSkills.map((s) => s.name).join(', '));
       setLearningSkills(profile.learningSkills.map((s) => s.name).join(', '));
       setAvatarUrl(profile.avatarUrl ?? null);
+      setLinkedinUsername(profile.linkedinUsername ?? '');
+      setInstagramUsername(profile.instagramUsername ?? '');
+      setEntrepreneurLevel(profile.entrepreneurLevel ?? null);
+      setGoal(profile.goal ?? null);
       setEmailVerified((profile as any).emailVerified ?? true);
       setProfileData({
         bio: profile.bio,
@@ -134,6 +145,10 @@ export const ProfileScreen = () => {
         bio,
         interests,
         location,
+        entrepreneurLevel,
+        goal,
+        linkedinUsername: linkedinUsername.trim() ? stripSocialHandle(linkedinUsername) : null,
+        instagramUsername: instagramUsername.trim() ? stripSocialHandle(instagramUsername) : null,
         offeredSkills: stringToSkills(offeredSkills),
         learningSkills: stringToSkills(learningSkills),
       });
@@ -233,6 +248,26 @@ export const ProfileScreen = () => {
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
+        {/* Email verification banner */}
+        {!emailVerified && (
+          <TouchableOpacity
+            style={styles.verifyBanner}
+            onPress={() => navigation.navigate('VerifyEmail')}
+            activeOpacity={0.8}
+          >
+            <View style={styles.verifyIcon}>
+              <Ionicons name="mail-unread" size={20} color="#C9A84C" />
+            </View>
+            <View style={styles.verifyContent}>
+              <Text style={styles.verifyTitle}>Verifica tu email</Text>
+              <Text style={styles.verifyText}>
+                Hemos enviado un código a {user?.email}. Tócame para introducirlo.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color="#C9A84C" />
+          </TouchableOpacity>
+        )}
+
         {/* Avatar */}
         <View style={styles.avatarSection}>
           <Avatar
@@ -256,7 +291,55 @@ export const ProfileScreen = () => {
               <Text style={styles.premiumBtnText}>Actualizar a Premium</Text>
             </TouchableOpacity>
           )}
+
+          {(entrepreneurLevel || goal) && (
+            <View style={{ marginTop: spacing.sm }}>
+              <ProfileBadges level={entrepreneurLevel} goal={goal} />
+            </View>
+          )}
+
+          {(linkedinUsername || instagramUsername) && !editing && (
+            <View style={{ marginTop: spacing.sm }}>
+              <SocialLinks linkedinUsername={linkedinUsername} instagramUsername={instagramUsername} />
+            </View>
+          )}
         </View>
+
+        {/* Completeness */}
+        {completeness && completeness.percent < 100 && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>Perfil completado</Text>
+              <Text style={styles.cardSubtitle}>{completeness.percent}%</Text>
+            </View>
+            <View style={styles.completenessBarBg}>
+              <View
+                style={[
+                  styles.completenessBarFill,
+                  {
+                    width: `${completeness.percent}%`,
+                    backgroundColor:
+                      completeness.percent >= 80
+                        ? colors.success
+                        : completeness.percent >= 50
+                        ? '#f59e0b'
+                        : colors.danger,
+                  },
+                ]}
+              />
+            </View>
+            {completeness.missing.length > 0 && (
+              <View style={{ marginTop: spacing.sm }}>
+                <Text style={styles.completenessHint}>
+                  Te falta:
+                </Text>
+                {completeness.missing.map((field) => (
+                  <Text key={field} style={styles.completenessItem}>• {field}</Text>
+                ))}
+              </View>
+            )}
+          </View>
+        )}
 
         {/* My Photos */}
         <View style={styles.card}>
@@ -334,6 +417,59 @@ export const ProfileScreen = () => {
               onChangeText={setLearningSkills}
               placeholder="finanzas, growth, ui/ux..."
             />
+
+            <Text style={styles.editSectionLabel}>Nivel emprendedor</Text>
+            <View style={styles.optionRow}>
+              {LEVEL_OPTIONS.map((opt) => {
+                const selected = entrepreneurLevel === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.optionChip, selected && styles.optionChipActive]}
+                    onPress={() => setEntrepreneurLevel(selected ? null : opt.value)}
+                  >
+                    <Ionicons name={opt.icon as any} size={14} color={selected ? colors.primary : colors.textMuted} />
+                    <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>{opt.title}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.editSectionLabel}>¿Qué buscas?</Text>
+            <View style={styles.optionRow}>
+              {GOAL_OPTIONS.map((opt) => {
+                const selected = goal === opt.value;
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[styles.optionChip, selected && styles.optionChipActive]}
+                    onPress={() => setGoal(selected ? null : opt.value)}
+                  >
+                    <Ionicons name={opt.icon as any} size={14} color={selected ? colors.primary : colors.textMuted} />
+                    <Text style={[styles.optionChipText, selected && styles.optionChipTextActive]}>{opt.title}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+
+            <Text style={styles.editSectionLabel}>Redes sociales</Text>
+            <InputField
+              label="Usuario de LinkedIn"
+              value={linkedinUsername}
+              onChangeText={setLinkedinUsername}
+              placeholder="ej: juan-perez (sin URL)"
+              autoCapitalize="none"
+              icon={<Ionicons name="logo-linkedin" size={18} color="#0A66C2" />}
+            />
+            <InputField
+              label="Usuario de Instagram"
+              value={instagramUsername}
+              onChangeText={setInstagramUsername}
+              placeholder="ej: juanperez (sin @)"
+              autoCapitalize="none"
+              icon={<Ionicons name="logo-instagram" size={18} color="#E4405F" />}
+            />
+
             <PrimaryButton label="Guardar cambios" onPress={handleSave} loading={saving} />
             <PrimaryButton
               label="Cancelar"
@@ -391,7 +527,7 @@ export const ProfileScreen = () => {
             { label: 'Configuración de cuenta', screen: 'Settings' as const, icon: 'settings-outline' as const },
             { label: 'Privacidad y seguridad', screen: 'Privacy' as const, icon: 'shield-outline' as const },
             { label: 'Notificaciones', screen: 'Notifications' as const, icon: 'notifications-outline' as const },
-            { label: 'Ayuda y soporte', screen: undefined, icon: 'help-circle-outline' as const },
+            { label: 'Ayuda y soporte', screen: 'Support' as const, icon: 'help-circle-outline' as const },
           ]).map((item) => (
             <TouchableOpacity
               key={item.label}
@@ -415,7 +551,7 @@ export const ProfileScreen = () => {
             <Ionicons name="ribbon" size={32} color={colors.premiumStart} />
             <Text style={styles.premiumBannerTitle}>Descubre Premium</Text>
             <Text style={styles.premiumBannerText}>
-              Accede a matches ilimitados, filtros avanzados y mucho más
+              Accede a conexiones ilimitadas, filtros avanzados y mucho más
             </Text>
             <TouchableOpacity style={styles.premiumBannerBtn} onPress={() => navigation.navigate('Pricing')}>
               <Text style={styles.premiumBannerBtnText}>Ver planes desde 6€/mes</Text>
@@ -557,6 +693,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     gap: spacing.md,
   },
+  editSectionLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.text,
+    marginTop: spacing.sm,
+    marginBottom: -4,
+    letterSpacing: 0.2,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  optionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+  },
+  optionChipActive: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primaryLight,
+  },
+  optionChipText: {
+    color: colors.textSecondary,
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  optionChipTextActive: {
+    color: colors.primary,
+    fontWeight: '700',
+  },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
@@ -657,6 +830,31 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
 
+  // Email verification banner
+  verifyBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.sm,
+    padding: spacing.md,
+    backgroundColor: 'rgba(201, 168, 76, 0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(201, 168, 76, 0.4)',
+    borderRadius: 14,
+  },
+  verifyIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(201, 168, 76, 0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  verifyContent: { flex: 1 },
+  verifyTitle: { fontSize: 14, fontWeight: '700', color: '#C9A84C' },
+  verifyText: { fontSize: 12, color: colors.textSecondary, marginTop: 2, lineHeight: 17 },
+
   // Photos
   cardHeader: {
     flexDirection: 'row',
@@ -743,4 +941,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   photoFull: { width: SCREEN_WIDTH, height: '100%' },
+  completenessBarBg: {
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: colors.border,
+    overflow: 'hidden',
+    marginTop: spacing.xs,
+  },
+  completenessBarFill: { height: '100%', borderRadius: 5 },
+  completenessHint: {
+    fontSize: 13,
+    color: colors.textSecondary,
+    marginBottom: 4,
+    fontWeight: '600',
+  },
+  completenessItem: { fontSize: 13, color: colors.textMuted, marginLeft: 6, lineHeight: 20 },
 });

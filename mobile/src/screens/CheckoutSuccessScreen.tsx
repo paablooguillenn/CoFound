@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { Animated, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Animated, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -40,8 +40,8 @@ export const CheckoutSuccessScreen = ({ navigation, route }: Props) => {
   }, []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Check Icon */}
         <Animated.View style={[styles.checkCircle, { transform: [{ scale: scaleAnim }] }]}>
           <Ionicons name="checkmark" size={48} color={colors.background} />
@@ -76,9 +76,9 @@ export const CheckoutSuccessScreen = ({ navigation, route }: Props) => {
             <Text style={styles.featuresTitle}>Ya puedes disfrutar de:</Text>
           </View>
           {[
-            { bold: 'Likes ilimitados', rest: ' para conectar sin restricciones' },
-            { bold: 'Ver quién te dio like', rest: ' y hacer match al instante' },
-            { bold: 'Filtros avanzados', rest: ' para encontrar tu match perfecto' },
+            { bold: 'Conexiones ilimitadas', rest: ' sin restricciones diarias' },
+            { bold: 'Ver interesados', rest: ' y conectar al instante' },
+            { bold: 'Filtros avanzados', rest: ' para encontrar a tu cofounder ideal' },
             { bold: 'Badge Premium', rest: ' visible en tu perfil' },
           ].map((item) => (
             <View key={item.bold} style={styles.featureRow}>
@@ -113,10 +113,10 @@ export const CheckoutSuccessScreen = ({ navigation, route }: Props) => {
           </TouchableOpacity>
         </View>
 
-        <Text style={styles.supportText}>
-          ¿Necesitas ayuda? Contacta con soporte
-        </Text>
-      </View>
+        <TouchableOpacity onPress={() => navigation.navigate('Support')} activeOpacity={0.7}>
+          <Text style={styles.supportText}>¿Necesitas ayuda? Contacta con soporte</Text>
+        </TouchableOpacity>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -124,12 +124,18 @@ export const CheckoutSuccessScreen = ({ navigation, route }: Props) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   content: {
-    flex: 1, alignItems: 'center', justifyContent: 'center',
+    flexGrow: 1, alignItems: 'center', justifyContent: 'center',
     paddingHorizontal: spacing.lg, gap: spacing.md,
+    paddingTop: spacing.xl, paddingBottom: spacing.xl,
   },
   checkCircle: {
     width: 80, height: 80, borderRadius: 40,
     backgroundColor: colors.success, alignItems: 'center', justifyContent: 'center',
+    shadowColor: colors.success,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4,
+    shadowRadius: 16,
+    elevation: 8,
   },
   title: { fontSize: 28, fontWeight: '900', color: colors.text },
   subtitle: {

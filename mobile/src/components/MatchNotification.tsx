@@ -10,84 +10,100 @@ type Props = {
   visible: boolean;
   matchName: string;
   matchAvatar?: string | null;
+  myFirstName?: string;
+  myLastName?: string;
+  myAvatarUrl?: string | null;
   isSuper?: boolean;
+  commonSkills?: string[];
   onChat: () => void;
   onClose: () => void;
 };
 
-export const MatchNotification = ({ visible, matchName, matchAvatar, isSuper = false, onChat, onClose }: Props) => {
-  const accent = isSuper ? '#60A5FA' : colors.pink;
-  const accentLight = isSuper ? 'rgba(96,165,250,0.16)' : colors.pinkLight;
-  const heartScale = useRef(new Animated.Value(0)).current;
+export const MatchNotification = ({
+  visible,
+  matchName,
+  matchAvatar,
+  myFirstName = 'Tú',
+  myLastName = '',
+  myAvatarUrl = null,
+  isSuper = false,
+  commonSkills = [],
+  onChat,
+  onClose,
+}: Props) => {
+  // Professional palette: gold for super, green for normal connection.
+  const accent = isSuper ? '#C9A84C' : '#4ADE80';
+  const accentLight = isSuper ? 'rgba(201,168,76,0.15)' : 'rgba(74,222,128,0.15)';
+
+  const iconScale = useRef(new Animated.Value(0)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
   const contentSlide = useRef(new Animated.Value(30)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (visible) {
-      heartScale.setValue(0);
-      contentOpacity.setValue(0);
-      contentSlide.setValue(30);
+    if (!visible) return;
+    iconScale.setValue(0);
+    contentOpacity.setValue(0);
+    contentSlide.setValue(30);
 
-      Animated.sequence([
-        Animated.spring(heartScale, {
+    Animated.sequence([
+      Animated.spring(iconScale, {
+        toValue: 1,
+        friction: 4,
+        tension: 100,
+        useNativeDriver: true,
+      }),
+      Animated.parallel([
+        Animated.timing(contentOpacity, {
           toValue: 1,
-          friction: 4,
-          tension: 100,
+          duration: 350,
           useNativeDriver: true,
         }),
-        Animated.parallel([
-          Animated.timing(contentOpacity, {
-            toValue: 1,
-            duration: 350,
-            useNativeDriver: true,
-          }),
-          Animated.spring(contentSlide, {
-            toValue: 0,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-        ]),
-      ]).start();
+        Animated.spring(contentSlide, {
+          toValue: 0,
+          friction: 8,
+          useNativeDriver: true,
+        }),
+      ]),
+    ]).start();
 
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(pulseAnim, {
-            toValue: 1.12,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-          Animated.timing(pulseAnim, {
-            toValue: 1,
-            duration: 800,
-            useNativeDriver: true,
-          }),
-        ]),
-      ).start();
-    }
-  }, [visible, heartScale, contentOpacity, contentSlide, pulseAnim]);
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1.08,
+          duration: 1100,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1100,
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [visible, iconScale, contentOpacity, contentSlide, pulseAnim]);
 
   const firstName = matchName.split(' ')[0] ?? '?';
   const lastName = matchName.split(' ')[1] ?? '?';
+  const skillsToShow = commonSkills.slice(0, 4);
 
   return (
     <Modal visible={visible} transparent={false} animationType="fade" onRequestClose={onClose}>
       <View style={styles.container}>
-        {/* Heart / Star icon */}
+        {/* Handshake / rocket icon — professional, not romantic */}
         <Animated.View
           style={[
-            styles.heartCircle,
+            styles.iconCircle,
             {
               backgroundColor: accent,
               shadowColor: accent,
-              transform: [{ scale: Animated.multiply(heartScale, pulseAnim) }],
+              transform: [{ scale: Animated.multiply(iconScale, pulseAnim) }],
             },
           ]}
         >
-          <Ionicons name={isSuper ? 'star' : 'heart'} size={44} color={colors.white} />
+          <Text style={styles.bigEmoji}>{isSuper ? '🚀' : '🤝'}</Text>
         </Animated.View>
 
-        {/* Content */}
         <Animated.View
           style={[
             styles.content,
@@ -97,20 +113,35 @@ export const MatchNotification = ({ visible, matchName, matchAvatar, isSuper = f
             },
           ]}
         >
-          <Text style={styles.title}>{isSuper ? '¡Super Match!' : '¡Es un Match!'}</Text>
+          <Text style={styles.title}>
+            {isSuper ? '¡Conexión prioritaria!' : '¡Conexión establecida!'}
+          </Text>
           <Text style={styles.subtitle}>
             {isSuper
-              ? `Le diste un super-like a ${firstName} y fue recíproco`
-              : `A ${firstName} también le interesa colaborar contigo`}
+              ? `Has destacado tu interés en ${firstName} y la conexión es mutua.`
+              : `${firstName} también está interesado/a en colaborar contigo.`}
           </Text>
 
-          {/* Avatars */}
+          {/* Common skills (why you're compatible) */}
+          {skillsToShow.length > 0 && (
+            <View style={[styles.skillsCard, { backgroundColor: accentLight, borderColor: accent }]}>
+              <Text style={[styles.skillsTitle, { color: accent }]}>Sinergia detectada</Text>
+              <View style={styles.skillsRow}>
+                {skillsToShow.map((s) => (
+                  <View key={s} style={[styles.skillPill, { borderColor: accent }]}>
+                    <Text style={[styles.skillPillText, { color: accent }]}>{s}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
           <View style={styles.avatarRow}>
             <View style={[styles.avatarWrapper, { borderColor: accent }]}>
-              <Avatar firstName="Tú" lastName="" size={68} />
+              <Avatar firstName={myFirstName} lastName={myLastName} avatarUrl={myAvatarUrl} size={68} />
             </View>
-            <View style={[styles.heartSmall, { backgroundColor: accentLight }]}>
-              <Ionicons name={isSuper ? 'star' : 'heart'} size={18} color={accent} />
+            <View style={[styles.iconSmall, { backgroundColor: accentLight }]}>
+              <Text style={styles.smallEmoji}>{isSuper ? '🚀' : '🤝'}</Text>
             </View>
             <View style={[styles.avatarWrapper, { borderColor: accent }]}>
               <Avatar
@@ -122,18 +153,19 @@ export const MatchNotification = ({ visible, matchName, matchAvatar, isSuper = f
             </View>
           </View>
 
-          {/* Actions */}
           <TouchableOpacity
             style={[styles.chatBtn, { backgroundColor: accent }]}
             onPress={onChat}
-            activeOpacity={0.8}
+            activeOpacity={0.85}
+            accessibilityRole="button"
+            accessibilityLabel="Enviar primer mensaje"
           >
-            <Ionicons name="chatbubble" size={20} color={colors.white} />
-            <Text style={styles.chatBtnText}>Enviar mensaje</Text>
+            <Ionicons name="chatbubble-ellipses" size={20} color={colors.background} />
+            <Text style={styles.chatBtnText}>Enviar primer mensaje</Text>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onClose} style={styles.closeBtn} activeOpacity={0.7}>
-            <Text style={styles.closeText}>Seguir descubriendo</Text>
+            <Text style={styles.closeText}>Seguir explorando</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -149,26 +181,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
   },
-  heartCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    backgroundColor: colors.pink,
+  iconCircle: {
+    width: 96,
+    height: 96,
+    borderRadius: 48,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.lg,
-    shadowColor: colors.pink,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 24,
+    shadowOpacity: 0.45,
+    shadowRadius: 28,
     elevation: 10,
   },
+  bigEmoji: { fontSize: 48 },
+  smallEmoji: { fontSize: 18 },
   content: {
     alignItems: 'center',
     width: '100%',
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '900',
     color: colors.white,
     textAlign: 'center',
@@ -180,7 +212,39 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 22,
     marginTop: 8,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.md,
+    paddingHorizontal: spacing.sm,
+  },
+  skillsCard: {
+    width: '100%',
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  skillsTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  skillsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    justifyContent: 'center',
+  },
+  skillPill: {
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+  },
+  skillPillText: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   avatarRow: {
     flexDirection: 'row',
@@ -190,15 +254,13 @@ const styles = StyleSheet.create({
   },
   avatarWrapper: {
     borderWidth: 3,
-    borderColor: colors.pink,
     borderRadius: 38,
     padding: 2,
   },
-  heartSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.pinkLight,
+  iconSmall: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -208,15 +270,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 10,
     width: '100%',
-    backgroundColor: colors.pink,
     borderRadius: 16,
     paddingVertical: 16,
     marginBottom: spacing.sm,
   },
   chatBtnText: {
-    color: colors.white,
-    fontSize: 17,
-    fontWeight: '700',
+    color: colors.background,
+    fontSize: 16,
+    fontWeight: '800',
   },
   closeBtn: {
     paddingVertical: 14,
@@ -224,7 +285,7 @@ const styles = StyleSheet.create({
   },
   closeText: {
     color: colors.textMuted,
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '600',
   },
 });

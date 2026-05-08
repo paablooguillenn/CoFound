@@ -21,12 +21,15 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '../components/Avatar';
+import { ProfileBadges } from '../components/ProfileBadges';
 import { SkillBadge } from '../components/SkillBadge';
+import { SocialLinks } from '../components/SocialLinks';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { AppStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
 import { getMessages, sendMessage, getMatchProfile, unmatchUser, blockUser, reportUser, markMessagesRead } from '../services/api';
+import { formatPresence } from '../utils/presence';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Chat'>;
 
@@ -49,6 +52,12 @@ interface MatchProfile {
   interests: string;
   location: string;
   isPremium: boolean;
+  lastSeenAt: string | null;
+  emailVerified: boolean;
+  entrepreneurLevel: 'principiante' | 'intermedio' | 'avanzado' | null;
+  goal: 'learn_skill' | 'find_partner' | 'networking' | null;
+  linkedinUsername: string | null;
+  instagramUsername: string | null;
   offeredSkills: { name: string }[];
   learningSkills: { name: string }[];
   photos?: { id: string; url: string; sortOrder: number }[];
@@ -244,7 +253,7 @@ export const ChatScreen = ({ navigation, route }: Props) => {
       await unmatchUser(matchId);
       navigation.goBack();
     } catch {
-      Alert.alert('Error', 'No se pudo deshacer el match.');
+      Alert.alert('Error', 'No se pudo deshacer la conexión.');
     }
   };
 
@@ -353,10 +362,15 @@ export const ChatScreen = ({ navigation, route }: Props) => {
         <Avatar firstName={nameParts[0] ?? '?'} lastName={nameParts[1] ?? '?'} avatarUrl={matchAvatar} size={40} />
         <View style={styles.headerInfo}>
           <Text style={styles.headerName}>{matchName}</Text>
-          <View style={styles.onlineRow}>
-            <View style={styles.onlineDot} />
-            <Text style={styles.headerStatus}>En línea</Text>
-          </View>
+          {(() => {
+            const presence = formatPresence(profile?.lastSeenAt);
+            return (
+              <View style={styles.onlineRow}>
+                {presence.online && <View style={styles.onlineDot} />}
+                <Text style={styles.headerStatus}>{presence.label}</Text>
+              </View>
+            );
+          })()}
         </View>
       </TouchableOpacity>
       <TouchableOpacity onPress={() => setShowMenu(true)}>
@@ -460,7 +474,7 @@ export const ChatScreen = ({ navigation, route }: Props) => {
             <View style={styles.menuDivider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); handleUnmatch(); }}>
               <Ionicons name="heart-dislike-outline" size={20} color={colors.danger} />
-              <Text style={[styles.menuText, { color: colors.danger }]}>Deshacer match</Text>
+              <Text style={[styles.menuText, { color: colors.danger }]}>Deshacer conexión</Text>
             </TouchableOpacity>
             <View style={styles.menuDivider} />
             <TouchableOpacity style={styles.menuItem} onPress={() => { setShowMenu(false); handleBlock(); }}>
@@ -519,7 +533,7 @@ export const ChatScreen = ({ navigation, route }: Props) => {
       <Modal visible={showUnmatchReasons} transparent animationType="fade" onRequestClose={() => setShowUnmatchReasons(false)}>
         <TouchableOpacity style={styles.reasonsOverlay} activeOpacity={1} onPress={() => setShowUnmatchReasons(false)}>
           <View style={styles.reasonsCard}>
-            <Text style={styles.reasonsTitle}>¿Por qué quieres deshacer el match?</Text>
+            <Text style={styles.reasonsTitle}>¿Por qué quieres deshacer la conexión?</Text>
             <Text style={styles.reasonsSubtitle}>Se eliminarán todos los mensajes con {nameParts[0]}</Text>
             {unmatchReasons.map((reason, i) => (
               <React.Fragment key={reason}>
@@ -573,6 +587,22 @@ export const ChatScreen = ({ navigation, route }: Props) => {
                     <Text style={styles.profileLocation}>{profile.location}</Text>
                   </View>
                 ) : null}
+
+                {(profile.entrepreneurLevel || profile.goal) && (
+                  <View style={{ marginTop: 8, alignItems: 'center' }}>
+                    <ProfileBadges level={profile.entrepreneurLevel} goal={profile.goal} />
+                  </View>
+                )}
+
+                {(profile.linkedinUsername || profile.instagramUsername) && (
+                  <View style={{ marginTop: 10, alignItems: 'center' }}>
+                    <SocialLinks
+                      linkedinUsername={profile.linkedinUsername}
+                      instagramUsername={profile.instagramUsername}
+                      size={36}
+                    />
+                  </View>
+                )}
               </View>
 
               {profile.photos && profile.photos.length > 0 && (
@@ -761,7 +791,7 @@ const styles = StyleSheet.create({
   msgRowMe: { alignItems: 'flex-end' },
   msgRowThem: { alignItems: 'flex-start' },
   bubble: { maxWidth: '78%', borderRadius: 20, paddingHorizontal: 16, paddingVertical: 10 },
-  bubbleMe: { backgroundColor: colors.pink, borderBottomRightRadius: 4 },
+  bubbleMe: { backgroundColor: '#4ADE80', borderBottomRightRadius: 4 },
   bubbleThem: { backgroundColor: colors.surfaceLight, borderBottomLeftRadius: 4, borderWidth: 1, borderColor: colors.border },
   bubbleText: { fontSize: 15, lineHeight: 21 },
   bubbleTextMe: { color: colors.white },
@@ -774,7 +804,7 @@ const styles = StyleSheet.create({
   // Input
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, padding: spacing.sm, gap: spacing.sm },
   input: { flex: 1, minHeight: 44, maxHeight: 100, borderRadius: 22, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surfaceLight, paddingHorizontal: 16, paddingVertical: 10, color: colors.text, fontSize: 15 },
-  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.pink, alignItems: 'center', justifyContent: 'center' },
+  sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#4ADE80', alignItems: 'center', justifyContent: 'center' },
   sendBtnDisabled: { backgroundColor: colors.border },
 
   // Menu

@@ -56,7 +56,7 @@ export const NotificationsScreen = ({ navigation }: Props) => {
   }
 
   const pushItems: { id: ToggleId; title: string; description: string; icon: keyof typeof Ionicons.glyphMap; color: string }[] = [
-    { id: 'notifMatches', title: 'Nuevos matches', description: 'Cuando alguien hace match contigo', icon: 'heart', color: '#F87171' },
+    { id: 'notifMatches', title: 'Nuevas conexiones', description: 'Cuando alguien quiere colaborar contigo', icon: 'flash', color: '#4ADE80' },
     { id: 'notifMessages', title: 'Mensajes', description: 'Nuevos mensajes en tus chats', icon: 'chatbubble', color: colors.info },
     { id: 'notifRecommendations', title: 'Recomendaciones', description: 'Perfiles altamente compatibles', icon: 'sparkles', color: colors.primary },
     { id: 'notifEmail', title: 'Email semanal', description: 'Resumen de actividad por email', icon: 'mail', color: colors.success },
@@ -66,7 +66,7 @@ export const NotificationsScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Notificaciones</Text>
@@ -76,7 +76,7 @@ export const NotificationsScreen = ({ navigation }: Props) => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.infoBanner}>
           <Text style={styles.infoText}>
-            Tus preferencias se guardan automáticamente y se sincronizan en todos tus dispositivos.
+            Tus preferencias se guardan automáticamente. Las notificaciones push se activarán en una próxima versión.
           </Text>
         </View>
 

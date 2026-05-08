@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   Alert,
+  Animated,
+  Easing,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -8,12 +11,21 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 
 import { useAuth } from '../context/AuthContext';
 import { updateMyProfile } from '../services/profile.service';
+import { addPhoto, getMyPhotos } from '../services/api';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
+import { GOAL_OPTIONS, LEVEL_OPTIONS } from '../utils/profileLabels';
+import { EntrepreneurLevel, Goal } from '../types/models';
+
+const TOTAL_STEPS = 7;
+const MIN_PHOTOS = 1;
 
 const SKILL_OPTIONS = [
   'Marketing Digital', 'Programación', 'Diseño UX/UI', 'Ventas',
@@ -23,44 +35,107 @@ const SKILL_OPTIONS = [
   'Blockchain', 'Inteligencia Artificial', 'Producción de Video',
 ];
 
-const ENTREPRENEUR_LEVELS = [
-  { value: 'beginner', label: 'Principiante — Tengo una idea' },
-  { value: 'intermediate', label: 'Intermedio — Proyecto en desarrollo' },
-  { value: 'advanced', label: 'Avanzado — Negocio establecido' },
-  { value: 'expert', label: 'Experto — Múltiples proyectos exitosos' },
-];
-
 const INTEREST_AREAS = [
   'Tecnología', 'E-commerce', 'Servicios', 'SaaS', 'Marketing',
   'Educación', 'Salud', 'Fintech', 'Sostenibilidad', 'Entretenimiento',
 ];
 
+type Photo = { id: string; url: string; sort_order: number };
+
 export const CreateProfileScreen = () => {
   const { user, markProfileComplete } = useAuth();
   const [step, setStep] = useState(1);
   const [bio, setBio] = useState('');
-  const [entrepreneurLevel, setEntrepreneurLevel] = useState('');
+  const [entrepreneurLevel, setEntrepreneurLevel] = useState<EntrepreneurLevel | ''>('');
+  const [goal, setGoal] = useState<Goal | ''>('');
   const [interestAreas, setInterestAreas] = useState<string[]>([]);
   const [skillsHave, setSkillsHave] = useState<string[]>([]);
   const [skillsWant, setSkillsWant] = useState<string[]>([]);
+  const [photos, setPhotos] = useState<Photo[]>([]);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const stepAnim = React.useRef(new Animated.Value(0)).current;
+
+  React.useEffect(() => {
+    stepAnim.setValue(0);
+    Animated.timing(stepAnim, {
+      toValue: 1,
+      duration: 360,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [step, stepAnim]);
+
+  const stepStyle = {
+    opacity: stepAnim,
+    transform: [
+      {
+        translateY: stepAnim.interpolate({ inputRange: [0, 1], outputRange: [24, 0] }),
+      },
+    ],
+  };
 
   const toggle = (item: string, list: string[], setList: (l: string[]) => void) => {
     setList(list.includes(item) ? list.filter((i) => i !== item) : [...list, item]);
   };
 
+  const loadPhotos = useCallback(async () => {
+    try {
+      const data = await getMyPhotos();
+      setPhotos(data);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (step === 7) loadPhotos();
+  }, [step, loadPhotos]);
+
+  const handlePickPhoto = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu galería para subir fotos.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      base64: true,
+      allowsEditing: true,
+      aspect: [3, 4],
+    });
+    if (result.canceled || !result.assets[0].base64) return;
+    try {
+      setUploadingPhoto(true);
+      const dataUri = `data:image/jpeg;base64,${result.assets[0].base64}`;
+      await addPhoto(dataUri);
+      await loadPhotos();
+    } catch (err: any) {
+      const msg = err?.response?.data?.message;
+      Alert.alert('Error', msg || 'No se pudo subir la foto.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  };
+
   const canProceed = () => {
     switch (step) {
-      case 1: return bio.length >= 20 && entrepreneurLevel !== '';
-      case 2: return interestAreas.length > 0;
-      case 3: return skillsHave.length > 0;
-      case 4: return skillsWant.length > 0;
+      case 1: return bio.length >= 20;
+      case 2: return entrepreneurLevel !== '';
+      case 3: return goal !== '';
+      case 4: return interestAreas.length > 0;
+      case 5: return skillsHave.length > 0;
+      case 6: return skillsWant.length > 0;
+      case 7: return photos.length >= MIN_PHOTOS;
       default: return false;
     }
   };
 
   const handleNext = async () => {
-    if (step < 4) {
+    if (!canProceed()) return; // defensive: button should be disabled, but double-check
+    if (step < TOTAL_STEPS) {
       setStep(step + 1);
       return;
     }
@@ -72,6 +147,8 @@ export const CreateProfileScreen = () => {
         bio,
         interests: interestAreas.join(', '),
         location: '',
+        entrepreneurLevel: entrepreneurLevel || null,
+        goal: goal || null,
         offeredSkills: skillsHave.map((name) => ({ name })),
         learningSkills: skillsWant.map((name) => ({ name })),
       });
@@ -83,222 +160,360 @@ export const CreateProfileScreen = () => {
     }
   };
 
-  const progress = (step / 4) * 100;
+  const progress = (step / TOTAL_STEPS) * 100;
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Barra de progreso */}
-      <View style={styles.progressHeader}>
-        <Text style={styles.progressLabel}>Paso {step} de 4</Text>
-        <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
-      </View>
-      <View style={styles.progressBg}>
-        <View style={[styles.progressFill, { width: `${progress}%` as any }]} />
-      </View>
-
-      {/* Contenido */}
-      <ScrollView
-        style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
-        {/* Paso 1: Bio + nivel */}
-        {step === 1 && (
-          <View style={styles.step}>
-            <Text style={styles.stepTitle}>Cuéntanos sobre ti</Text>
-            <Text style={styles.stepSubtitle}>
-              Esta información ayudará a otros emprendedores a conocerte mejor
-            </Text>
-
-            <Text style={styles.fieldLabel}>Descripción personal</Text>
-            <TextInput
-              style={styles.textArea}
-              value={bio}
-              onChangeText={setBio}
-              placeholder="Ej: Desarrollador apasionado por crear soluciones innovadoras..."
-              placeholderTextColor={colors.textMuted}
-              multiline
-              numberOfLines={5}
-            />
-            <Text style={styles.charCount}>{bio.length} caracteres (mínimo 20)</Text>
-
-            <Text style={styles.fieldLabel}>Nivel emprendedor</Text>
-            {ENTREPRENEUR_LEVELS.map((level) => (
-              <TouchableOpacity
-                key={level.value}
+    <View style={styles.root}>
+      <LinearGradient
+        colors={['#1A1A1A', '#0A0A0A']}
+        style={StyleSheet.absoluteFillObject}
+      />
+      <SafeAreaView style={styles.safe}>
+        {/* Header con stepper visual */}
+        <View style={styles.headerContainer}>
+          <View style={styles.stepIndicators}>
+            {Array.from({ length: TOTAL_STEPS }).map((_, i) => (
+              <View
+                key={i}
                 style={[
-                  styles.levelOption,
-                  entrepreneurLevel === level.value && styles.levelOptionActive,
+                  styles.stepDot,
+                  i + 1 < step && styles.stepDotDone,
+                  i + 1 === step && styles.stepDotActive,
                 ]}
-                onPress={() => setEntrepreneurLevel(level.value)}
-              >
-                <Text
-                  style={[
-                    styles.levelText,
-                    entrepreneurLevel === level.value && styles.levelTextActive,
-                  ]}
-                >
-                  {level.label}
-                </Text>
-              </TouchableOpacity>
+              />
             ))}
           </View>
-        )}
-
-        {/* Paso 2: Áreas de interés */}
-        {step === 2 && (
-          <View style={styles.step}>
-            <Text style={styles.stepTitle}>Áreas de interés</Text>
-            <Text style={styles.stepSubtitle}>
-              Selecciona los sectores que te interesan (puedes elegir varios)
-            </Text>
-            <View style={styles.pills}>
-              {INTEREST_AREAS.map((area) => (
-                <TouchableOpacity
-                  key={area}
-                  style={[styles.pill, interestAreas.includes(area) && styles.pillSelected]}
-                  onPress={() => toggle(area, interestAreas, setInterestAreas)}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      interestAreas.includes(area) && styles.pillTextSelected,
-                    ]}
-                  >
-                    {area}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          <View style={styles.progressMeta}>
+            <Text style={styles.progressLabel}>Paso {step} de {TOTAL_STEPS}</Text>
+            <Text style={styles.progressPercent}>{Math.round(progress)}%</Text>
           </View>
-        )}
+        </View>
 
-        {/* Paso 3: Habilidades que tienes */}
-        {step === 3 && (
-          <View style={styles.step}>
-            <Text style={styles.stepTitle}>Habilidades que tienes</Text>
-            <Text style={styles.stepSubtitle}>
-              Selecciona las habilidades en las que eres competente
-            </Text>
-            <View style={styles.pills}>
-              {SKILL_OPTIONS.map((skill) => (
-                <TouchableOpacity
-                  key={skill}
-                  style={[styles.pill, skillsHave.includes(skill) && styles.pillGreen]}
-                  onPress={() => toggle(skill, skillsHave, setSkillsHave)}
-                >
-                  <Text
-                    style={[
-                      styles.pillText,
-                      skillsHave.includes(skill) && styles.pillTextSelected,
-                    ]}
-                  >
-                    {skill}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-        )}
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Paso 1: Bio */}
+          {step === 1 && (
+            <Animated.View style={[styles.step, stepStyle]}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="person-circle" size={48} color={colors.primary} />
+              </View>
+              <Text style={styles.stepTitle}>Cuéntanos sobre ti</Text>
+              <Text style={styles.stepSubtitle}>
+                Una buena descripción aumenta tus conexiones en un 60 %
+              </Text>
+              <TextInput
+                style={styles.textArea}
+                value={bio}
+                onChangeText={setBio}
+                placeholder="Ej: Desarrollador apasionado por crear soluciones innovadoras. Busco co-fundador técnico para idea SaaS B2B..."
+                placeholderTextColor={colors.textMuted}
+                multiline
+                numberOfLines={6}
+              />
+              <View style={styles.charRow}>
+                <Text style={[styles.charCount, bio.length >= 20 && styles.charCountOk]}>
+                  {bio.length} / 20 caracteres mínimos
+                </Text>
+                {bio.length >= 20 && <Ionicons name="checkmark-circle" size={16} color={colors.success} />}
+              </View>
+            </Animated.View>
+          )}
 
-        {/* Paso 4: Habilidades que quieres aprender */}
-        {step === 4 && (
-          <View style={styles.step}>
-            <Text style={styles.stepTitle}>Habilidades que quieres aprender</Text>
-            <Text style={styles.stepSubtitle}>
-              Esto ayudará a encontrar personas que puedan enseñarte
-            </Text>
-            <View style={styles.pills}>
-              {SKILL_OPTIONS.map((skill) => {
-                const isHave = skillsHave.includes(skill);
-                const isWant = skillsWant.includes(skill);
+          {/* Paso 2: Nivel emprendedor */}
+          {step === 2 && (
+            <Animated.View style={[styles.step, stepStyle]}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="trophy" size={48} color="#FBBF24" />
+              </View>
+              <Text style={styles.stepTitle}>¿Cómo te describirías?</Text>
+              <Text style={styles.stepSubtitle}>
+                Esto ayuda a otros a saber dónde estás en tu camino emprendedor
+              </Text>
+              {LEVEL_OPTIONS.map((option) => {
+                const selected = entrepreneurLevel === option.value;
                 return (
                   <TouchableOpacity
-                    key={skill}
-                    disabled={isHave}
-                    style={[
-                      styles.pill,
-                      isHave && styles.pillDisabled,
-                      isWant && styles.pillBlue,
-                    ]}
-                    onPress={() => toggle(skill, skillsWant, setSkillsWant)}
+                    key={option.value}
+                    style={[styles.optionCard, selected && styles.optionCardActive]}
+                    onPress={() => setEntrepreneurLevel(option.value)}
+                    activeOpacity={0.85}
                   >
-                    <Text
-                      style={[
-                        styles.pillText,
-                        isHave && styles.pillTextDisabled,
-                        isWant && styles.pillTextSelected,
-                      ]}
-                    >
-                      {skill}
-                    </Text>
+                    <View style={[styles.optionIcon, selected && styles.optionIconActive]}>
+                      <Ionicons name={option.icon as any} size={22} color={selected ? colors.primary : colors.textMuted} />
+                    </View>
+                    <View style={styles.optionContent}>
+                      <Text style={[styles.optionTitle, selected && styles.optionTitleActive]}>
+                        {option.title}
+                      </Text>
+                      <Text style={styles.optionDesc}>{option.description}</Text>
+                    </View>
+                    {selected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
                   </TouchableOpacity>
                 );
               })}
-            </View>
-          </View>
-        )}
-      </ScrollView>
-
-      {/* Botones de navegación */}
-      <View style={styles.footer}>
-        <View style={styles.footerRow}>
-          {step > 1 && (
-            <TouchableOpacity style={styles.btnBack} onPress={() => setStep(step - 1)}>
-              <Text style={styles.btnBackText}>Atrás</Text>
-            </TouchableOpacity>
+            </Animated.View>
           )}
-          <TouchableOpacity
-            style={[styles.btnNext, !canProceed() && styles.btnNextDisabled]}
-            onPress={handleNext}
-            disabled={!canProceed() || saving}
-          >
-            <Text style={[styles.btnNextText, !canProceed() && { color: colors.textMuted }]}>
-              {saving ? 'Guardando...' : step === 4 ? 'Finalizar' : 'Continuar'}
-            </Text>
-          </TouchableOpacity>
+
+          {/* Paso 3: ¿Qué buscas? */}
+          {step === 3 && (
+            <Animated.View style={[styles.step, stepStyle]}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="compass" size={48} color="#A855F7" />
+              </View>
+              <Text style={styles.stepTitle}>¿Qué buscas en CoFound?</Text>
+              <Text style={styles.stepSubtitle}>
+                Elige lo que mejor describe tu objetivo principal
+              </Text>
+              {GOAL_OPTIONS.map((option) => {
+                const selected = goal === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[styles.optionCard, selected && styles.optionCardActive]}
+                    onPress={() => setGoal(option.value)}
+                    activeOpacity={0.85}
+                  >
+                    <View style={[styles.optionIcon, selected && styles.optionIconActive]}>
+                      <Ionicons name={option.icon as any} size={22} color={selected ? colors.primary : colors.textMuted} />
+                    </View>
+                    <View style={styles.optionContent}>
+                      <Text style={[styles.optionTitle, selected && styles.optionTitleActive]}>
+                        {option.title}
+                      </Text>
+                      <Text style={styles.optionDesc}>{option.description}</Text>
+                    </View>
+                    {selected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                  </TouchableOpacity>
+                );
+              })}
+            </Animated.View>
+          )}
+
+          {/* Paso 4: Áreas de interés */}
+          {step === 4 && (
+            <Animated.View style={[styles.step, stepStyle]}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="layers" size={48} color="#60A5FA" />
+              </View>
+              <Text style={styles.stepTitle}>Áreas de interés</Text>
+              <Text style={styles.stepSubtitle}>
+                Selecciona los sectores que te interesan
+              </Text>
+              <View style={styles.pills}>
+                {INTEREST_AREAS.map((area) => (
+                  <TouchableOpacity
+                    key={area}
+                    style={[styles.pill, interestAreas.includes(area) && styles.pillSelected]}
+                    onPress={() => toggle(area, interestAreas, setInterestAreas)}
+                  >
+                    <Text style={[styles.pillText, interestAreas.includes(area) && styles.pillTextSelected]}>
+                      {area}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Paso 5: Habilidades que tienes */}
+          {step === 5 && (
+            <Animated.View style={[styles.step, stepStyle]}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="hammer" size={48} color="#4ADE80" />
+              </View>
+              <Text style={styles.stepTitle}>Habilidades que tienes</Text>
+              <Text style={styles.stepSubtitle}>
+                Lo que aportas — esto define con quién te emparejaremos
+              </Text>
+              <View style={styles.pills}>
+                {SKILL_OPTIONS.map((skill) => (
+                  <TouchableOpacity
+                    key={skill}
+                    style={[styles.pill, skillsHave.includes(skill) && styles.pillGreen]}
+                    onPress={() => toggle(skill, skillsHave, setSkillsHave)}
+                  >
+                    <Text style={[styles.pillText, skillsHave.includes(skill) && styles.pillTextSelected]}>
+                      {skill}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Paso 6: Habilidades que quieres aprender */}
+          {step === 6 && (
+            <Animated.View style={[styles.step, stepStyle]}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="school" size={48} color="#60A5FA" />
+              </View>
+              <Text style={styles.stepTitle}>Habilidades que buscas</Text>
+              <Text style={styles.stepSubtitle}>
+                Lo que esperas que tu cofounder aporte
+              </Text>
+              <View style={styles.pills}>
+                {SKILL_OPTIONS.map((skill) => {
+                  const isHave = skillsHave.includes(skill);
+                  const isWant = skillsWant.includes(skill);
+                  return (
+                    <TouchableOpacity
+                      key={skill}
+                      disabled={isHave}
+                      style={[
+                        styles.pill,
+                        isHave && styles.pillDisabled,
+                        isWant && styles.pillBlue,
+                      ]}
+                      onPress={() => toggle(skill, skillsWant, setSkillsWant)}
+                    >
+                      <Text
+                        style={[
+                          styles.pillText,
+                          isHave && styles.pillTextDisabled,
+                          isWant && styles.pillTextSelected,
+                        ]}
+                      >
+                        {skill}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </Animated.View>
+          )}
+
+          {/* Paso 7: Fotos (mínimo 3) */}
+          {step === 7 && (
+            <Animated.View style={[styles.step, stepStyle]}>
+              <View style={styles.heroIcon}>
+                <Ionicons name="images" size={48} color="#F472B6" />
+              </View>
+              <Text style={styles.stepTitle}>
+                {MIN_PHOTOS === 1 ? 'Sube tu foto de perfil' : `Sube al menos ${MIN_PHOTOS} fotos`}
+              </Text>
+              <Text style={styles.stepSubtitle}>
+                Los perfiles con foto reciben hasta 4× más solicitudes de conexión. Puedes añadir hasta 6.
+              </Text>
+
+              <View style={styles.photoGrid}>
+                {Array.from({ length: 6 }).map((_, idx) => {
+                  const photo = photos[idx];
+                  if (photo) {
+                    return (
+                      <View key={photo.id} style={styles.photoSlot}>
+                        <Image source={{ uri: photo.url }} style={styles.photoImage} />
+                        {idx === 0 && (
+                          <View style={styles.photoMainBadge}>
+                            <Text style={styles.photoMainText}>Principal</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  }
+                  const isRequired = idx < MIN_PHOTOS;
+                  return (
+                    <TouchableOpacity
+                      key={`empty-${idx}`}
+                      style={[styles.photoSlot, styles.photoSlotEmpty, isRequired && styles.photoSlotRequired]}
+                      onPress={handlePickPhoto}
+                      disabled={uploadingPhoto}
+                    >
+                      <Ionicons name="add" size={28} color={colors.textMuted} />
+                      {isRequired && <Text style={styles.photoSlotLabel}>Obligatoria</Text>}
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+
+              <View style={styles.photoStatusRow}>
+                <Ionicons
+                  name={photos.length >= MIN_PHOTOS ? 'checkmark-circle' : 'information-circle'}
+                  size={18}
+                  color={photos.length >= MIN_PHOTOS ? colors.success : colors.textMuted}
+                />
+                <Text style={[styles.photoStatusText, photos.length >= MIN_PHOTOS && { color: colors.success }]}>
+                  {photos.length === 0
+                    ? `Mínimo ${MIN_PHOTOS} foto`
+                    : `${photos.length} ${photos.length === 1 ? 'foto subida' : 'fotos subidas'}`}
+                </Text>
+              </View>
+            </Animated.View>
+          )}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <View style={styles.footerRow}>
+            {step > 1 && (
+              <TouchableOpacity
+                style={styles.btnBack}
+                onPress={() => setStep(step - 1)}
+                accessibilityRole="button"
+                accessibilityLabel="Paso anterior"
+              >
+                <Ionicons name="arrow-back" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity
+              style={[styles.btnNext, !canProceed() && styles.btnNextDisabled]}
+              onPress={handleNext}
+              disabled={!canProceed() || saving}
+              accessibilityRole="button"
+              accessibilityLabel={step === TOTAL_STEPS ? 'Finalizar' : 'Continuar'}
+            >
+              <Text style={[styles.btnNextText, !canProceed() && { color: colors.textMuted }]}>
+                {saving ? 'Guardando...' : step === TOTAL_STEPS ? '¡Empezar!' : 'Continuar'}
+              </Text>
+              {!saving && <Ionicons name="arrow-forward" size={18} color={canProceed() ? colors.background : colors.textMuted} />}
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.background,
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  root: { flex: 1, backgroundColor: colors.background },
+  safe: { flex: 1 },
+  headerContainer: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    paddingBottom: spacing.md,
   },
-  progressLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: colors.text,
+  stepIndicators: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: spacing.sm,
   },
-  progressPercent: {
-    fontSize: 13,
-    color: colors.textMuted,
-  },
-  progressBg: {
-    height: 8,
-    backgroundColor: colors.border,
-    borderRadius: 4,
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.md,
-  },
-  progressFill: {
-    height: 8,
-    backgroundColor: colors.primary,
-    borderRadius: 4,
-  },
-  scroll: {
+  stepDot: {
     flex: 1,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: colors.border,
   },
+  stepDotActive: {
+    backgroundColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  stepDotDone: {
+    backgroundColor: colors.primaryDark,
+  },
+  progressMeta: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressLabel: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
+  progressPercent: { fontSize: 12, color: colors.primary, fontWeight: '700' },
+  scroll: { flex: 1 },
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
@@ -306,58 +521,85 @@ const styles = StyleSheet.create({
   step: {
     gap: spacing.md,
   },
+  heroIcon: {
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+  },
   stepTitle: {
-    fontSize: 22,
-    fontWeight: '800',
+    fontSize: 26,
+    fontWeight: '900',
     color: colors.text,
+    textAlign: 'center',
+    letterSpacing: -0.5,
   },
   stepSubtitle: {
     fontSize: 14,
     color: colors.textSecondary,
-    lineHeight: 22,
-  },
-  fieldLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.text,
-    marginTop: spacing.sm,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.md,
   },
   textArea: {
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 16,
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
+    paddingBottom: spacing.md,
     color: colors.text,
-    fontSize: 14,
-    minHeight: 120,
+    fontSize: 15,
+    minHeight: 140,
     textAlignVertical: 'top',
     backgroundColor: colors.surface,
+    lineHeight: 22,
   },
-  charCount: {
-    fontSize: 11,
-    color: colors.textMuted,
+  charRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'flex-end',
   },
-  levelOption: {
+  charCount: { fontSize: 12, color: colors.textMuted, fontWeight: '600' },
+  charCountOk: { color: colors.success },
+  optionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
     borderWidth: 2,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 16,
     padding: spacing.md,
     backgroundColor: colors.surface,
   },
-  levelOptionActive: {
+  optionCardActive: {
     borderColor: colors.primary,
     backgroundColor: colors.primaryLight,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  levelText: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    fontWeight: '500',
+  optionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: colors.surfaceLight,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  levelTextActive: {
-    color: colors.primary,
-    fontWeight: '700',
+  optionIconActive: {
+    backgroundColor: 'rgba(74,222,128,0.18)',
   },
+  optionContent: { flex: 1, gap: 2 },
+  optionTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.text,
+  },
+  optionTitleActive: { color: colors.primary },
+  optionDesc: { fontSize: 12, color: colors.textMuted, lineHeight: 17 },
   pills: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -377,26 +619,75 @@ const styles = StyleSheet.create({
   },
   pillGreen: {
     borderColor: colors.success,
-    backgroundColor: colors.successLight,
+    backgroundColor: colors.success,
   },
   pillBlue: {
-    borderColor: colors.info,
-    backgroundColor: colors.infoLight,
+    borderColor: '#60A5FA',
+    backgroundColor: '#60A5FA',
   },
   pillDisabled: {
     borderColor: colors.border,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: colors.surface,
+    opacity: 0.5,
   },
   pillText: {
     fontSize: 13,
     color: colors.textSecondary,
-    fontWeight: '500',
+    fontWeight: '600',
   },
-  pillTextSelected: {
-    color: colors.background,
+  pillTextSelected: { color: colors.background, fontWeight: '700' },
+  pillTextDisabled: { color: colors.textMuted },
+  photoGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  pillTextDisabled: {
+  photoSlot: {
+    width: '31.5%',
+    aspectRatio: 3 / 4,
+    borderRadius: 12,
+    backgroundColor: colors.surface,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  photoSlotEmpty: {
+    borderWidth: 2,
+    borderColor: colors.border,
+    borderStyle: 'dashed',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  photoSlotRequired: {
+    borderColor: colors.primary,
+  },
+  photoSlotLabel: {
+    fontSize: 10,
+    color: colors.primary,
+    fontWeight: '700',
+  },
+  photoImage: { width: '100%', height: '100%' },
+  photoMainBadge: {
+    position: 'absolute',
+    top: 4,
+    left: 4,
+    backgroundColor: 'rgba(0,0,0,0.75)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  photoMainText: { color: '#fff', fontSize: 9, fontWeight: '800' },
+  photoStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    justifyContent: 'center',
+    paddingTop: spacing.sm,
+  },
+  photoStatusText: {
+    fontSize: 13,
     color: colors.textMuted,
+    fontWeight: '600',
   },
   footer: {
     backgroundColor: colors.surface,
@@ -409,31 +700,37 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   btnBack: {
-    paddingHorizontal: spacing.lg,
-    paddingVertical: 14,
-    borderWidth: 2,
+    width: 52,
+    height: 52,
+    borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: 12,
+    borderRadius: 14,
+    alignItems: 'center',
     justifyContent: 'center',
-  },
-  btnBackText: {
-    color: colors.textSecondary,
-    fontWeight: '600',
-    fontSize: 15,
   },
   btnNext: {
     flex: 1,
+    flexDirection: 'row',
+    gap: 8,
     paddingVertical: 14,
     backgroundColor: colors.primary,
-    borderRadius: 12,
+    borderRadius: 14,
     alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    elevation: 6,
   },
   btnNextDisabled: {
     backgroundColor: colors.border,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   btnNextText: {
     color: colors.background,
-    fontWeight: '700',
+    fontWeight: '800',
     fontSize: 15,
   },
 });

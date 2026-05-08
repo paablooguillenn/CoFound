@@ -11,36 +11,30 @@ import { AppStackParamList } from '../types/navigation';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Language'>;
 
-const LANGUAGES: { code: 'es' | 'en'; label: string; native: string; flag: string }[] = [
+const LANGUAGES: { code: 'es'; label: string; native: string; flag: string }[] = [
   { code: 'es', label: 'Español', native: 'Español', flag: '🇪🇸' },
-  { code: 'en', label: 'Inglés', native: 'English', flag: '🇬🇧' },
 ];
 
 export const LanguageScreen = ({ navigation }: Props) => {
-  const [locale, setLocale] = useState<'es' | 'en'>('es');
+  const [locale, setLocale] = useState<'es'>('es');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     getPreferences()
       .then((data) => {
         const current = data.preferences?.locale;
-        if (current === 'en' || current === 'es') setLocale(current);
+        if (current === 'es') setLocale(current);
       })
       .catch(() => {});
   }, []);
 
-  const handleSelect = async (code: 'es' | 'en') => {
+  const handleSelect = async (code: 'es') => {
     if (code === locale) return;
     setSaving(true);
     setLocale(code);
     try {
       await updatePreferences({ locale: code });
-      Alert.alert(
-        'Idioma actualizado',
-        code === 'en'
-          ? 'La interfaz seguirá en español por ahora; la traducción completa al inglés llegará en una próxima actualización. Tu preferencia se ha guardado.'
-          : 'Idioma guardado: Español.',
-      );
+      Alert.alert('Idioma actualizado', 'Idioma guardado: Español.');
     } catch {
       Alert.alert('Error', 'No se pudo guardar la preferencia.');
     } finally {
@@ -51,7 +45,7 @@ export const LanguageScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Idioma</Text>
@@ -59,7 +53,9 @@ export const LanguageScreen = ({ navigation }: Props) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.sub}>Selecciona el idioma de la aplicación.</Text>
+        <Text style={styles.sub}>
+          La aplicación está disponible en español. Más idiomas estarán disponibles en una próxima versión.
+        </Text>
         <View style={styles.section}>
           {LANGUAGES.map((lang, idx) => (
             <TouchableOpacity

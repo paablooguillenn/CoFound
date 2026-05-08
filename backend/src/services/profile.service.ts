@@ -9,8 +9,33 @@ type ProfileUpdateInput = {
   bio?: string;
   interests?: string;
   location?: string;
+  entrepreneurLevel?: 'principiante' | 'intermedio' | 'avanzado' | null;
+  goal?: 'learn_skill' | 'find_partner' | 'networking' | null;
+  linkedinUsername?: string | null;
+  instagramUsername?: string | null;
   offeredSkills: Array<{ name: string; level?: number }>;
   learningSkills: Array<{ name: string; level?: number }>;
+};
+
+// Robust normalisation of a social handle. Accepts:
+//   "juan-perez", "@juan-perez", "linkedin.com/in/juan-perez",
+//   "https://www.linkedin.com/in/juan-perez/", "instagram.com/juanperez"
+// and returns the bare username, or null if it cannot be reduced to one.
+const normalizeSocialHandle = (raw: string | null | undefined): string | null => {
+  if (!raw) return null;
+  let cleaned = raw.trim();
+  // Strip protocol + www
+  cleaned = cleaned.replace(/^https?:\/\//i, '').replace(/^www\./i, '');
+  // Strip known LinkedIn / Instagram URL prefixes (case-insensitive)
+  cleaned = cleaned.replace(/^linkedin\.com\/in\//i, '');
+  cleaned = cleaned.replace(/^linkedin\.com\/pub\//i, '');
+  cleaned = cleaned.replace(/^instagram\.com\//i, '');
+  // Strip leading @ and whitespace; remove trailing slashes / query strings
+  cleaned = cleaned.replace(/^@+/, '').replace(/\s+/g, '').replace(/[/?#].*$/, '');
+  if (!cleaned) return null;
+  // Whitelist allowed chars (alphanumeric, dot, underscore, hyphen)
+  if (!/^[A-Za-z0-9._-]+$/.test(cleaned)) return null;
+  return cleaned.slice(0, 120);
 };
 
 export const getProfileById = async (userId: string) => {
@@ -23,6 +48,10 @@ export const getProfileById = async (userId: string) => {
     avatar_url: string | null;
     interests: string | null;
     location: string | null;
+    entrepreneur_level: string | null;
+    goal: string | null;
+    linkedin_username: string | null;
+    instagram_username: string | null;
     is_premium: boolean;
     premium_plan: string | null;
     premium_since: Date | null;
@@ -32,6 +61,7 @@ export const getProfileById = async (userId: string) => {
     boost_until: Date | null;
   }>(
     `SELECT id, email, first_name, last_name, bio, avatar_url, interests, location,
+            entrepreneur_level, goal, linkedin_username, instagram_username,
             is_premium, premium_plan, premium_since, preferences, two_factor_enabled,
             email_verified, boost_until
      FROM users
@@ -55,6 +85,10 @@ export const getProfileById = async (userId: string) => {
     bio: user.bio ?? '',
     interests: user.interests ?? '',
     location: user.location ?? '',
+    entrepreneurLevel: user.entrepreneur_level ?? null,
+    goal: user.goal ?? null,
+    linkedinUsername: user.linkedin_username ?? null,
+    instagramUsername: user.instagram_username ?? null,
     isPremium: user.is_premium ?? false,
     premiumPlan: user.premium_plan,
     premiumSince: user.premium_since,
@@ -360,6 +394,10 @@ export const updateProfile = async (userId: string, input: ProfileUpdateInput) =
       avatar_url: string | null;
       interests: string | null;
       location: string | null;
+      entrepreneur_level: string | null;
+      goal: string | null;
+      linkedin_username: string | null;
+      instagram_username: string | null;
     }>(
       `UPDATE users
        SET first_name = $2,
@@ -367,9 +405,14 @@ export const updateProfile = async (userId: string, input: ProfileUpdateInput) =
            bio = $4,
            interests = $5,
            location = $6,
+           entrepreneur_level = $7,
+           goal = $8,
+           linkedin_username = $9,
+           instagram_username = $10,
            updated_at = NOW()
        WHERE id = $1
-       RETURNING id, email, first_name, last_name, bio, avatar_url, interests, location`,
+       RETURNING id, email, first_name, last_name, bio, avatar_url, interests, location,
+                 entrepreneur_level, goal, linkedin_username, instagram_username`,
       [
         userId,
         input.firstName.trim(),
@@ -377,6 +420,10 @@ export const updateProfile = async (userId: string, input: ProfileUpdateInput) =
         input.bio?.trim() || null,
         input.interests?.trim() || null,
         input.location?.trim() || null,
+        input.entrepreneurLevel ?? null,
+        input.goal ?? null,
+        normalizeSocialHandle(input.linkedinUsername),
+        normalizeSocialHandle(input.instagramUsername),
       ],
     );
 
@@ -399,6 +446,10 @@ export const updateProfile = async (userId: string, input: ProfileUpdateInput) =
       bio: user.bio ?? '',
       interests: user.interests ?? '',
       location: user.location ?? '',
+      entrepreneurLevel: user.entrepreneur_level ?? null,
+      goal: user.goal ?? null,
+      linkedinUsername: user.linkedin_username ?? null,
+      instagramUsername: user.instagram_username ?? null,
       ...skills,
     };
   } catch (error) {

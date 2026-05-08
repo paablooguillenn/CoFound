@@ -1,4 +1,5 @@
 import { env } from '../config/env';
+import { AppError } from './http-error';
 
 type SendEmailInput = {
   to: string;
@@ -6,13 +7,24 @@ type SendEmailInput = {
   html: string;
 };
 
+// Extracts the 6-digit code from the email body so it shows prominently in dev logs.
+const extractCode = (html: string): string | null => {
+  const match = html.match(/(?<![\d])(\d{6})(?![\d])/);
+  return match ? match[1] : null;
+};
+
 export const sendEmail = async ({ to, subject, html }: SendEmailInput): Promise<void> => {
   if (!env.RESEND_API_KEY) {
-    console.log('\n=== [DEV] Email not sent (no RESEND_API_KEY) ===');
-    console.log(`To: ${to}`);
-    console.log(`Subject: ${subject}`);
-    console.log(`Body:\n${html.replace(/<[^>]+>/g, '')}`);
-    console.log('================================================\n');
+    const code = extractCode(html);
+    console.log('\n┌─────────────────────────────────────────────────────────┐');
+    console.log('│  [DEV] EMAIL NO ENVIADO — RESEND_API_KEY no configurado │');
+    console.log('├─────────────────────────────────────────────────────────┤');
+    console.log(`│  To:      ${to.padEnd(45)} │`);
+    console.log(`│  Subject: ${subject.slice(0, 45).padEnd(45)} │`);
+    if (code) {
+      console.log(`│  CÓDIGO:  ${code}                                              │`);
+    }
+    console.log('└─────────────────────────────────────────────────────────┘\n');
     return;
   }
 
@@ -31,12 +43,67 @@ export const sendEmail = async ({ to, subject, html }: SendEmailInput): Promise<
   });
 
   if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Resend failed (${response.status}): ${error}`);
+    const errorBody = await response.text();
+    console.error(`[email] Resend API error (${response.status}) sending to ${to}: ${errorBody}`);
+    console.error(`[email] EMAIL_FROM=${env.EMAIL_FROM} — using onboarding@resend.dev only delivers to the Resend account owner. To send to anyone, verify a domain in Resend.`);
+
+    // Surface a useful 4xx so the mobile client shows a meaningful message.
+    const usingSandboxSender = env.EMAIL_FROM.includes('onboarding@resend.dev');
+    const userMessage = usingSandboxSender
+      ? 'No se puede enviar el correo: el remitente está en modo sandbox. Verifica un dominio en Resend.'
+      : 'No se pudo enviar el correo de verificación. Inténtalo más tarde.';
+    throw new AppError(userMessage, 502);
   }
+
+  console.log(`[email] sent → ${to} (subject: ${subject.slice(0, 60)})`);
 };
 
 const LOGO_URL = 'https://co-found-backend.vercel.app/assets/logo-mark.png';
+
+const escapeHtml = (s: string): string =>
+  s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+export const renderSupportMessageEmail = ({
+  from,
+  fromEmail,
+  subject,
+  body,
+  ticketId,
+}: {
+  from: string;
+  fromEmail: string;
+  subject: string;
+  body: string;
+  ticketId: string;
+}): string => `<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8"><title>Nuevo ticket de soporte</title></head>
+<body style="margin:0;padding:0;background:#0A0A0A;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background:#0A0A0A;padding:40px 16px;">
+    <tr><td align="center">
+      <table role="presentation" width="560" cellspacing="0" cellpadding="0" border="0" style="max-width:560px;width:100%;background:#141414;border:1px solid #2A2A2A;border-radius:20px;overflow:hidden;">
+        <tr><td style="padding:24px 28px 12px;">
+          <span style="color:#4ADE80;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;">CoFound · Nuevo ticket</span>
+          <h1 style="margin:6px 0 0;color:#F5F5F5;font-size:20px;font-weight:800;line-height:26px;">${escapeHtml(subject)}</h1>
+        </td></tr>
+        <tr><td style="padding:0 28px 12px;">
+          <div style="height:1px;background:#2A2A2A;"></div>
+        </td></tr>
+        <tr><td style="padding:8px 28px 0;color:#A0A0A0;font-size:13px;line-height:20px;">
+          <strong style="color:#F5F5F5;">De:</strong> ${escapeHtml(from)} &lt;${escapeHtml(fromEmail)}&gt;<br>
+          <strong style="color:#F5F5F5;">Ticket:</strong> ${escapeHtml(ticketId)}
+        </td></tr>
+        <tr><td style="padding:16px 28px 28px;">
+          <div style="background:#0A0A0A;border:1px solid #2A2A2A;border-radius:12px;padding:18px 20px;color:#E5E5E5;font-size:14px;line-height:22px;white-space:pre-wrap;">${escapeHtml(body)}</div>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
 
 export const renderEmailVerification = (firstName: string, code: string): string => `<!DOCTYPE html>
 <html lang="es">

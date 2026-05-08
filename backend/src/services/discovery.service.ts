@@ -4,6 +4,7 @@ import { getPhotosMap } from './photo.service';
 
 type DiscoveryOptions = {
   locationFilter?: string;
+  skillFilter?: string;
 };
 
 const FREE_DAILY_LIMIT = 5;
@@ -13,7 +14,7 @@ export const getDiscoveryFeed = async (
   currentUserId: string,
   options: DiscoveryOptions = {},
 ) => {
-  const { locationFilter } = options;
+  const { locationFilter, skillFilter } = options;
 
   const meta = await pool.query<{ is_premium: boolean; today_count: string }>(
     `SELECT u.is_premium,
@@ -35,10 +36,20 @@ export const getDiscoveryFeed = async (
 
   const params: (string | number)[] = [currentUserId, limit];
   let locationClause = '';
+  let skillClause = '';
 
   if (locationFilter) {
     params.push(`%${locationFilter}%`);
     locationClause = `AND u.location ILIKE $${params.length}`;
+  }
+
+  if (skillFilter) {
+    params.push(`%${skillFilter}%`);
+    skillClause = `AND EXISTS (
+      SELECT 1 FROM user_skills usf
+      JOIN skills sf ON sf.id = usf.skill_id
+      WHERE usf.user_id = u.id AND sf.name ILIKE $${params.length}
+    )`;
   }
 
   const result = await pool.query<{
@@ -49,6 +60,10 @@ export const getDiscoveryFeed = async (
     avatar_url: string | null;
     interests: string | null;
     location: string | null;
+    entrepreneur_level: string | null;
+    goal: string | null;
+    linkedin_username: string | null;
+    instagram_username: string | null;
     compatibility_score: string;
     super_liked_by_them: boolean;
     is_boosted: boolean;
@@ -70,6 +85,10 @@ export const getDiscoveryFeed = async (
        u.avatar_url,
        u.interests,
        u.location,
+       u.entrepreneur_level,
+       u.goal,
+       u.linkedin_username,
+       u.instagram_username,
        (u.boost_until IS NOT NULL AND u.boost_until > NOW()) AS is_boosted,
        ROUND(
          ((
@@ -92,6 +111,12 @@ export const getDiscoveryFeed = async (
        ) AS super_liked_by_them
      FROM users u
      WHERE u.id <> $1
+       AND u.deactivated_at IS NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM blocked_users bu
+         WHERE (bu.blocker_id = $1 AND bu.blocked_id = u.id)
+            OR (bu.blocker_id = u.id AND bu.blocked_id = $1)
+       )
        AND NOT EXISTS (
          SELECT 1 FROM user_likes ul
          WHERE ul.sender_id = $1 AND ul.receiver_id = u.id
@@ -106,6 +131,7 @@ export const getDiscoveryFeed = async (
             OR (m.user_b_id = $1 AND m.user_a_id = u.id)
        )
        ${locationClause}
+       ${skillClause}
      ORDER BY is_boosted DESC, super_liked_by_them DESC, compatibility_score DESC, u.created_at DESC
      LIMIT $2`,
     params,
@@ -129,6 +155,10 @@ export const getDiscoveryFeed = async (
       bio: row.bio ?? '',
       interests: row.interests ?? '',
       location: row.location ?? '',
+      entrepreneurLevel: row.entrepreneur_level ?? null,
+      goal: row.goal ?? null,
+      linkedinUsername: row.linkedin_username ?? null,
+      instagramUsername: row.instagram_username ?? null,
       compatibilityScore: Number(row.compatibility_score),
       superLikedByThem: row.super_liked_by_them,
       isBoosted: row.is_boosted,

@@ -27,4 +27,7 @@ export type AppStackParamList = {
   DataExport: undefined;
   Setup2FA: undefined;
   LikesReceived: undefined;
+  VerifyEmail: undefined;
+  Support: undefined;
+  UserProfile: { userId: string; preview?: { firstName: string; lastName: string; avatarUrl?: string | null } };
 };

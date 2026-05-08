@@ -1,12 +1,13 @@
 import { Router } from 'express';
 
-import { getMatchesController, likeUserController, passUserController, superLikeUserController, getMatchProfileController, unmatchController, blockUserController, reportUserController, getUnreadController, markReadController, rewindController, getLikesReceivedController, getBlockedUsersController, unblockUserController } from '../controllers/matches.controller';
+import { getMatchesController, likeUserController, passUserController, superLikeUserController, getMatchProfileController, unmatchController, blockUserController, reportUserController, getUnreadController, markReadController, rewindController, getLikesReceivedController, getBlockedUsersController, unblockUserController, latestUnreadController } from '../controllers/matches.controller';
 import { getMessagesController, sendMessageController } from '../controllers/messages.controller';
 
 export const matchesRouter = Router();
 
 matchesRouter.get('/', getMatchesController);
 matchesRouter.get('/unread', getUnreadController);
+matchesRouter.get('/latest-unread', latestUnreadController);
 matchesRouter.post('/like', likeUserController);
 matchesRouter.post('/pass', passUserController);
 matchesRouter.post('/superlike', superLikeUserController);

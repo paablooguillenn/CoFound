@@ -1,7 +1,6 @@
-import React, { useCallback, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 
 import { ExploreScreen } from '../screens/ExploreScreen';
 import { MatchesScreen } from '../screens/MatchesScreen';
@@ -15,15 +14,25 @@ const Tab = createBottomTabNavigator<AppTabParamList>();
 export const AppTabsNavigator = () => {
   const [unread, setUnread] = useState(0);
 
-  // Poll unread count when tabs are visible
-  useFocusEffect(
-    useCallback(() => {
-      const load = () => getUnreadCount().then(setUnread).catch(() => {});
-      load();
-      const interval = setInterval(load, 10000); // every 10s
-      return () => clearInterval(interval);
-    }, []),
-  );
+  // Poll unread count continuously while the tabs navigator is mounted.
+  // We use a plain useEffect (not useFocusEffect) so the badge updates even
+  // when the user is inside a stack screen pushed on top of the tabs.
+  useEffect(() => {
+    let cancelled = false;
+    const load = () => {
+      getUnreadCount()
+        .then((count) => {
+          if (!cancelled) setUnread(count);
+        })
+        .catch(() => {});
+    };
+    load();
+    const interval = setInterval(load, 8000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, []);
 
   return (
     <Tab.Navigator
@@ -52,17 +61,14 @@ export const AppTabsNavigator = () => {
         name="Matches"
         component={MatchesScreen}
         options={{
-          title: 'Matches',
-          tabBarIcon: ({ color, size }) => <Ionicons name="heart-outline" size={size} color={color} />,
-          tabBarBadge: unread > 0 ? unread : undefined,
+          title: 'Conexiones',
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-outline" size={size} color={color} />,
+          tabBarBadge: unread > 0 ? (unread > 99 ? '99+' : unread) : undefined,
           tabBarBadgeStyle: {
             backgroundColor: colors.pink,
-            color: colors.white,
-            fontSize: 11,
-            fontWeight: '700',
-            minWidth: 18,
-            height: 18,
-            lineHeight: 18,
+            color: '#fff',
+            fontSize: 10,
+            fontWeight: '800',
           },
         }}
       />

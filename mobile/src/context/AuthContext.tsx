@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { Alert } from 'react-native';
 
 import { loginRequest, registerRequest } from '../services/auth.service';
-import { setAuthToken } from '../services/api';
+import { setAuthToken, setOnUnauthorized } from '../services/api';
 import { AuthUser } from '../types/models';
 
 type AuthState = {
@@ -81,6 +82,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const signIn = async (email: string, password: string) => {
     const response = await loginRequest(email, password);
     await persistSession(response.token, response.user, true);
+    if ((response as { reactivated?: boolean }).reactivated) {
+      Alert.alert(
+        'Cuenta reactivada',
+        'Tu cuenta estaba desactivada y la hemos reactivado al iniciar sesión. Si fue un error, puedes volver a desactivarla desde Privacidad.',
+      );
+    }
   };
 
   const signUp = async (payload: {
@@ -106,6 +113,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       AsyncStorage.removeItem(PROFILE_COMPLETE_KEY),
     ]);
   };
+
+  useEffect(() => {
+    setOnUnauthorized(() => {
+      signOut().catch(() => undefined);
+    });
+    return () => setOnUnauthorized(null);
+  }, []);
 
   const updateUser = (nextUser: AuthUser) => {
     setUser(nextUser);

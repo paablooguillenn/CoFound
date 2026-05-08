@@ -1,5 +1,5 @@
 import { api } from './api';
-import { Skill, UserProfile } from '../types/models';
+import { EntrepreneurLevel, Goal, Skill, UserProfile } from '../types/models';
 
 export const getMyProfile = async () => {
   const response = await api.get<UserProfile>('/profile/me');
@@ -12,6 +12,10 @@ export const updateMyProfile = async (payload: {
   bio: string;
   interests: string;
   location: string;
+  entrepreneurLevel?: EntrepreneurLevel | null;
+  goal?: Goal | null;
+  linkedinUsername?: string | null;
+  instagramUsername?: string | null;
   offeredSkills: Skill[];
   learningSkills: Skill[];
 }) => {

@@ -17,14 +17,17 @@ import { LanguageScreen } from '../screens/LanguageScreen';
 import { DataExportScreen } from '../screens/DataExportScreen';
 import { Setup2FAScreen } from '../screens/Setup2FAScreen';
 import { LikesReceivedScreen } from '../screens/LikesReceivedScreen';
+import { VerifyEmailScreen } from '../screens/VerifyEmailScreen';
+import { SupportScreen } from '../screens/SupportScreen';
+import { UserProfileScreen } from '../screens/UserProfileScreen';
 import { AppTabsNavigator } from './AppTabsNavigator';
 import { AuthNavigator } from './AuthNavigator';
 import { AppStackParamList } from '../types/navigation';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
-const AppStackNavigator = () => (
-  <Stack.Navigator screenOptions={{ headerShown: false }}>
+const AppStackNavigator = ({ initialRouteName }: { initialRouteName: keyof AppStackParamList }) => (
+  <Stack.Navigator initialRouteName={initialRouteName} screenOptions={{ headerShown: false }}>
     <Stack.Screen name="Tabs" component={AppTabsNavigator} />
     <Stack.Screen name="Chat" component={ChatScreen} />
     <Stack.Screen name="Settings" component={SettingsScreen} />
@@ -39,14 +42,19 @@ const AppStackNavigator = () => (
     <Stack.Screen name="DataExport" component={DataExportScreen} />
     <Stack.Screen name="Setup2FA" component={Setup2FAScreen} />
     <Stack.Screen name="LikesReceived" component={LikesReceivedScreen} />
+    <Stack.Screen name="VerifyEmail" component={VerifyEmailScreen} />
+    <Stack.Screen name="Support" component={SupportScreen} />
+    <Stack.Screen name="UserProfile" component={UserProfileScreen} />
   </Stack.Navigator>
 );
 
 export const RootNavigator = () => {
-  const { token, isLoading, profileComplete } = useAuth();
+  const { token, isLoading, profileComplete, user } = useAuth();
 
   if (isLoading) return <SplashScreen />;
   if (!token) return <AuthNavigator />;
   if (!profileComplete) return <CreateProfileScreen />;
-  return <AppStackNavigator />;
+
+  const initialRoute: keyof AppStackParamList = user?.emailVerified === false ? 'VerifyEmail' : 'Tabs';
+  return <AppStackNavigator initialRouteName={initialRoute} />;
 };

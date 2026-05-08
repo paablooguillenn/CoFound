@@ -34,3 +34,18 @@ coverage/
 # OS
 .DS_Store
 Thumbs.db
+
+# PDF generation debug screenshots (intermediate artefacts of generate_pdf.py)
+assets/check_*.png
+assets/debug_*.png
+assets/bib_*.png
+assets/page1_*.png
+assets/page2_*.png
+assets/page3_*.png
+assets/cover_big_logo.png
+assets/decorative_raw.png
+assets/decorative_top.png
+assets/embedded_cover_logo*.png
+assets/corner_logo_area.png
+assets/anexo_check_*.png
+assets/toc_check.png

@@ -65,7 +65,7 @@ export const CheckoutScreen = ({ navigation, route }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Volver">
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Finalizar compra</Text>
@@ -73,16 +73,17 @@ export const CheckoutScreen = ({ navigation, route }: Props) => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        {/* Security Banner */}
-        <View style={styles.securityBanner}>
-          <Ionicons name="shield-checkmark" size={20} color={colors.success} />
+        {/* Demo mode banner — TFC academic build, no real charge */}
+        <View style={styles.demoBanner}>
+          <Ionicons name="construct" size={18} color="#f59e0b" />
           <View style={{ flex: 1 }}>
-            <Text style={styles.securityTitle}>Pago 100% seguro</Text>
-            <Text style={styles.securityText}>
-              Tus datos están protegidos con encriptación SSL de nivel bancario
+            <Text style={styles.demoTitle}>Modo demo</Text>
+            <Text style={styles.demoText}>
+              Esta pantalla simula el flujo de pago para fines académicos. No se realiza ningún cargo real ni se envían los datos a una pasarela bancaria.
             </Text>
           </View>
         </View>
+
 
         {/* Order Summary */}
         <View style={styles.card}>
@@ -111,7 +112,7 @@ export const CheckoutScreen = ({ navigation, route }: Props) => {
             <View style={styles.savingsBanner}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
               <Text style={styles.savingsText}>
-                Ahorras {(5.99 * 12 - Number(annualTotal)).toFixed(2)}€ al año
+                Ahorras {(4.99 * 12 - Number(annualTotal)).toFixed(2)}€ al año
               </Text>
             </View>
           )}
@@ -227,10 +228,10 @@ export const CheckoutScreen = ({ navigation, route }: Props) => {
         <View style={styles.benefitsCard}>
           <Text style={styles.benefitsTitle}>Lo que obtienes con Premium:</Text>
           {[
-            'Likes ilimitados para conectar sin límites',
-            'Ve quién te dio like antes de dar match',
+            'Conexiones ilimitadas, sin restricciones diarias',
+            'Ve quién quiere conectar contigo antes de decidir',
             'Filtros avanzados por ubicación e industria',
-            'Badge Premium visible en tu perfil',
+            'Distintivo Premium visible en tu perfil',
           ].map((text) => (
             <View key={text} style={styles.benefitRow}>
               <Ionicons name="checkmark-circle" size={16} color={colors.success} />
@@ -256,6 +257,12 @@ const styles = StyleSheet.create({
   },
   headerTitle: { fontSize: 18, fontWeight: '800', color: colors.text },
   content: { padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xl },
+  demoBanner: {
+    flexDirection: 'row', gap: spacing.sm, backgroundColor: 'rgba(245,158,11,0.12)',
+    borderWidth: 1, borderColor: 'rgba(245,158,11,0.4)', borderRadius: 14, padding: spacing.md,
+  },
+  demoTitle: { fontSize: 13, fontWeight: '800', color: '#f59e0b' },
+  demoText: { fontSize: 11, color: '#fbbf24', marginTop: 2, lineHeight: 15 },
   securityBanner: {
     flexDirection: 'row', gap: spacing.sm, backgroundColor: colors.successLight,
     borderWidth: 1, borderColor: '#1A3D25', borderRadius: 14, padding: spacing.md,

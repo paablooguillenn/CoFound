@@ -16,56 +16,59 @@ interface Feature {
 }
 
 const FREE_FEATURES: Feature[] = [
-  { text: '5 likes por día', included: true },
-  { text: 'Matches básicos', included: true },
-  { text: 'Chat con matches', included: true },
+  { text: '5 conexiones nuevas al día', included: true },
+  { text: 'Conexiones recíprocas', included: true },
+  { text: 'Chat con tus conexiones', included: true },
   { text: 'Ver perfiles básicos', included: true },
-  { text: 'Likes ilimitados', included: false },
-  { text: 'Ver quién te dio like', included: false },
+  { text: 'Conexiones ilimitadas', included: false },
+  { text: 'Ver quién quiere conectar contigo', included: false },
   { text: 'Filtros avanzados', included: false },
-  { text: 'Super Likes', included: false },
+  { text: 'Conexiones prioritarias', included: false },
   { text: 'Modo incógnito', included: false },
 ];
 
 const PREMIUM_FEATURES: Feature[] = [
-  { text: 'Likes ilimitados', included: true },
-  { text: 'Ver quién te dio like', included: true },
+  { text: 'Conexiones ilimitadas', included: true },
+  { text: 'Ver quién quiere conectar contigo', included: true },
   { text: 'Filtros avanzados por ubicación e industria', included: true },
-  { text: 'Rewind (deshacer swipe)', included: true },
-  { text: '5 Super Likes por semana', included: true },
+  { text: 'Deshacer última decisión', included: true },
+  { text: '5 conexiones prioritarias por semana', included: true },
   { text: 'Modo incógnito', included: true },
-  { text: 'Destacar tu perfil 1x al mes', included: true },
+  { text: 'Destacar tu perfil 1× al mes', included: true },
   { text: 'Prioridad en el algoritmo', included: true },
   { text: 'Sin anuncios', included: true },
-  { text: 'Badge Premium en tu perfil', included: true },
+  { text: 'Distintivo Premium en tu perfil', included: true },
   { text: 'Soporte prioritario', included: true },
 ];
 
 const BENEFITS = [
-  { icon: 'heart' as const, color: colors.primary, bg: colors.primaryLight, title: 'Likes ilimitados', desc: 'Sin restricciones diarias' },
-  { icon: 'eye' as const, color: colors.primary, bg: colors.primaryLight, title: 'Ver quién te dio like', desc: 'Match instantáneo' },
-  { icon: 'filter' as const, color: colors.info, bg: colors.infoLight, title: 'Filtros avanzados', desc: 'Encuentra tu match perfecto' },
-  { icon: 'flash' as const, color: '#C9A84C', bg: '#1A1708', title: 'Prioridad', desc: 'Destaca en búsquedas' },
+  { icon: 'flash' as const, color: colors.primary, bg: colors.primaryLight, title: 'Conexiones ilimitadas', desc: 'Sin restricciones diarias' },
+  { icon: 'eye' as const, color: colors.primary, bg: colors.primaryLight, title: 'Ver interesados', desc: 'Conexión instantánea' },
+  { icon: 'filter' as const, color: colors.info, bg: colors.infoLight, title: 'Filtros avanzados', desc: 'Encuentra tu cofounder ideal' },
+  { icon: 'rocket' as const, color: '#C9A84C', bg: '#1A1708', title: 'Prioridad', desc: 'Destaca en el algoritmo' },
 ];
 
 const FAQ = [
   { q: '¿Puedo cancelar en cualquier momento?', a: 'Sí, puedes cancelar tu suscripción en cualquier momento desde la configuración de tu cuenta.' },
-  { q: '¿Qué métodos de pago aceptan?', a: 'Aceptamos tarjetas de crédito/débito (Visa, Mastercard), PayPal y transferencia bancaria.' },
-  { q: '¿Hay periodo de prueba?', a: 'Ofrecemos 7 días de prueba gratuita para el plan Premium.' },
+  { q: '¿Qué métodos de pago aceptan?', a: 'Tarjeta de crédito/débito (Visa, Mastercard). PayPal y transferencia bancaria estarán disponibles próximamente.' },
+  { q: '¿Hay periodo de prueba?', a: 'Próximamente: planeamos ofrecer 7 días de prueba gratuita para el plan Premium.' },
   { q: '¿Los precios incluyen IVA?', a: 'Sí, todos los precios mostrados ya incluyen todos los impuestos aplicables.' },
+  { q: '¿Esta versión es de demostración?', a: 'Esta build forma parte de un proyecto académico (TFC) y la pasarela de pago opera en modo demo: no se realiza ningún cargo real.' },
 ];
 
 export const PricingScreen = ({ navigation }: Props) => {
   const [billing, setBilling] = useState<'monthly' | 'yearly'>('monthly');
   const [expandedFaq, setExpandedFaq] = useState<number | null>(null);
 
-  const price = billing === 'monthly' ? 5.99 : 4.19;
-  const annualTotal = (4.19 * 12).toFixed(2);
+  const MONTHLY_PRICE = 4.99;
+  const YEARLY_MONTHLY_PRICE = 3.49;
+  const price = billing === 'monthly' ? MONTHLY_PRICE : YEARLY_MONTHLY_PRICE;
+  const annualTotal = (YEARLY_MONTHLY_PRICE * 12).toFixed(2);
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Volver">
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Planes y precios</Text>

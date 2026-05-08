@@ -1,5 +1,5 @@
-import React from 'react';
-import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { Animated, Easing, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -10,6 +10,7 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { AuthStackParamList } from '../types/navigation';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
+import { useEntrance } from '../utils/useEntrance';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Welcome'>;
 
@@ -31,56 +32,127 @@ const features = [
   },
 ];
 
-export const WelcomeScreen = ({ navigation }: Props) => (
-  <View style={styles.root}>
-    <LinearGradient
-      colors={['#1A1A1A', '#0A0A0A']}
-      style={StyleSheet.absoluteFillObject}
-    />
-    <SafeAreaView style={styles.safe}>
-      {/* Hero */}
-      <View style={styles.hero}>
-        <Image source={logo} style={styles.logo} resizeMode="contain" />
+const AnimatedFeature = ({
+  icon,
+  title,
+  description,
+  index,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  description: string;
+  index: number;
+}) => {
+  const anim = useEntrance(index + 1);
+  return (
+    <Animated.View style={[styles.featureRow, anim]}>
+      <Ionicons name={icon} size={22} color={colors.primary} style={styles.featureIcon} />
+      <View style={styles.featureText}>
+        <Text style={styles.featureTitle}>{title}</Text>
+        <Text style={styles.featureDesc}>{description}</Text>
       </View>
+    </Animated.View>
+  );
+};
 
-      {/* Features */}
-      <View style={styles.features}>
-        {features.map((f) => (
-          <View key={f.title} style={styles.featureRow}>
-            <Ionicons name={f.icon} size={22} color={colors.primary} style={styles.featureIcon} />
-            <View style={styles.featureText}>
-              <Text style={styles.featureTitle}>{f.title}</Text>
-              <Text style={styles.featureDesc}>{f.description}</Text>
-            </View>
-          </View>
-        ))}
-      </View>
+const PressableScale = ({
+  onPress,
+  style,
+  children,
+  accessibilityLabel,
+}: {
+  onPress: () => void;
+  style: any;
+  children: React.ReactNode;
+  accessibilityLabel: string;
+}) => {
+  const scale = useRef(new Animated.Value(1)).current;
+  return (
+    <Animated.View style={{ transform: [{ scale }] }}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() =>
+          Animated.spring(scale, { toValue: 0.96, useNativeDriver: true, speed: 30, bounciness: 0 }).start()
+        }
+        onPressOut={() =>
+          Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 6 }).start()
+        }
+        style={style}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+      >
+        {children}
+      </Pressable>
+    </Animated.View>
+  );
+};
 
-      {/* Buttons */}
-      <View style={styles.buttons}>
-        <TouchableOpacity
-          style={styles.btnPrimary}
-          onPress={() => navigation.navigate('Register')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.btnPrimaryText}>Crear cuenta</Text>
-        </TouchableOpacity>
+export const WelcomeScreen = ({ navigation }: Props) => {
+  const heroAnim = useEntrance(0);
+  const buttonsAnim = useEntrance(features.length + 1);
+  const termsAnim = useEntrance(features.length + 2);
 
-        <TouchableOpacity
-          style={styles.btnOutline}
-          onPress={() => navigation.navigate('Login')}
-          activeOpacity={0.85}
-        >
-          <Text style={styles.btnOutlineText}>Iniciar sesión</Text>
-        </TouchableOpacity>
-      </View>
+  // Subtle floating animation on the logo (loop)
+  const float = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, {
+          toValue: 1,
+          duration: 2400,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+        Animated.timing(float, {
+          toValue: 0,
+          duration: 2400,
+          easing: Easing.inOut(Easing.sin),
+          useNativeDriver: true,
+        }),
+      ]),
+    ).start();
+  }, [float]);
+  const floatY = float.interpolate({ inputRange: [0, 1], outputRange: [0, -8] });
 
-      <Text style={styles.terms}>
-        Al continuar aceptas nuestros términos y política de privacidad
-      </Text>
-    </SafeAreaView>
-  </View>
-);
+  return (
+    <View style={styles.root}>
+      <LinearGradient colors={['#1A1A1A', '#0A0A0A']} style={StyleSheet.absoluteFillObject} />
+      <SafeAreaView style={styles.safe}>
+        <Animated.View style={[styles.hero, heroAnim, { transform: [...(heroAnim.transform || []), { translateY: floatY }] }]}>
+          <Image source={logo} style={styles.logo} resizeMode="contain" />
+        </Animated.View>
+
+        <View style={styles.features}>
+          {features.map((f, i) => (
+            <AnimatedFeature key={f.title} icon={f.icon} title={f.title} description={f.description} index={i} />
+          ))}
+        </View>
+
+        <Animated.View style={[styles.buttons, buttonsAnim]}>
+          <PressableScale
+            onPress={() => navigation.navigate('Register')}
+            style={styles.btnPrimary}
+            accessibilityLabel="Crear cuenta"
+          >
+            <Text style={styles.btnPrimaryText}>Crear cuenta</Text>
+          </PressableScale>
+
+          <PressableScale
+            onPress={() => navigation.navigate('Login')}
+            style={styles.btnOutline}
+            accessibilityLabel="Iniciar sesión"
+          >
+            <Text style={styles.btnOutlineText}>Iniciar sesión</Text>
+          </PressableScale>
+        </Animated.View>
+
+        <Animated.Text style={[styles.terms, termsAnim]}>
+          Al continuar aceptas nuestros términos y política de privacidad
+        </Animated.Text>
+      </SafeAreaView>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
   root: {
@@ -102,19 +174,6 @@ const styles = StyleSheet.create({
     width: 400,
     height: 400,
     marginBottom: spacing.sm,
-  },
-  title: {
-    fontSize: 40,
-    fontWeight: '900',
-    color: colors.text,
-    letterSpacing: -1,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 24,
-    paddingHorizontal: spacing.md,
   },
   features: {
     gap: spacing.lg,
@@ -151,6 +210,11 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.35,
+    shadowRadius: 16,
+    elevation: 6,
   },
   btnPrimaryText: {
     color: colors.background,

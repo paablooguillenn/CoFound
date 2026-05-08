@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Avatar } from '../components/Avatar';
-import { getMatches } from '../services/matches.service';
+import { getLikesReceived, getMatches } from '../services/matches.service';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { MatchItem } from '../types/models';
@@ -104,10 +104,25 @@ const AnimatedMatchRow = ({
             </Text>
           ) : (
             <View style={styles.newMatchRow}>
-              <Ionicons name="sparkles" size={12} color={colors.pink} />
-              <Text style={styles.noMessage}>Nuevo match — ¡saluda!</Text>
+              <Ionicons name="sparkles" size={12} color="#4ADE80" />
+              <Text style={styles.noMessage}>Nueva conexión — envía un primer mensaje</Text>
             </View>
           )}
+          {!match.hasMessage && match.expiresAt && (() => {
+            const ms = new Date(match.expiresAt).getTime() - Date.now();
+            if (ms <= 0) return null;
+            const days = Math.floor(ms / (24 * 3600 * 1000));
+            const hours = Math.floor(ms / (3600 * 1000));
+            const isUrgent = ms < 24 * 3600 * 1000;
+            const label =
+              days >= 1 ? `Expira en ${days} ${days === 1 ? 'día' : 'días'}` : `Expira en ${Math.max(hours, 1)} h`;
+            return (
+              <View style={[styles.expiryRow, isUrgent && styles.expiryRowUrgent]}>
+                <Ionicons name="time-outline" size={11} color={isUrgent ? '#fca5a5' : colors.textMuted} />
+                <Text style={[styles.expiryText, isUrgent && styles.expiryTextUrgent]}>{label}</Text>
+              </View>
+            );
+          })()}
         </View>
 
         <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
@@ -121,14 +136,19 @@ const AnimatedMatchRow = ({
 export const MatchesScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<AppStackParamList>>();
   const [matches, setMatches] = useState<MatchItem[]>([]);
+  const [likesCount, setLikesCount] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
 
   const loadMatches = useCallback(async () => {
     try {
-      const data = await getMatches();
-      setMatches(data);
+      const [matchesData, likesData] = await Promise.all([
+        getMatches(),
+        getLikesReceived().catch(() => []),
+      ]);
+      setMatches(matchesData);
+      setLikesCount(likesData.length);
     } catch {
-      Alert.alert('Error', 'No se pudieron cargar los matches.');
+      Alert.alert('Error', 'No se pudieron cargar las conexiones.');
     }
   }, []);
 
@@ -148,18 +168,31 @@ export const MatchesScreen = () => {
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.headerTitle}>Matches</Text>
+          <Text style={styles.headerTitle}>Conexiones</Text>
           <Text style={styles.headerSubtitle}>
-            {matches.length} {matches.length === 1 ? 'conexión' : 'conexiones'}
+            {matches.length} {matches.length === 1 ? 'conexión activa' : 'conexiones activas'}
           </Text>
         </View>
         <TouchableOpacity
-          style={styles.likesReceivedBtn}
+          style={[styles.likesReceivedBtn, likesCount > 0 && styles.likesReceivedBtnActive]}
           onPress={() => navigation.navigate('LikesReceived')}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel={`Solicitudes de conexión — ${likesCount} pendientes`}
         >
-          <Ionicons name="heart" size={16} color={colors.pink} />
-          <Text style={styles.likesReceivedText}>Te han dado like</Text>
+          <Ionicons
+            name="person-add"
+            size={16}
+            color={likesCount > 0 ? colors.white : '#3B82F6'}
+          />
+          <Text style={[styles.likesReceivedText, likesCount > 0 && styles.likesReceivedTextActive]}>
+            Solicitudes
+          </Text>
+          {likesCount > 0 && (
+            <View style={styles.likesBadge}>
+              <Text style={styles.likesBadgeText}>{likesCount > 99 ? '99+' : likesCount}</Text>
+            </View>
+          )}
         </TouchableOpacity>
       </View>
 
@@ -178,20 +211,19 @@ export const MatchesScreen = () => {
         {matches.length === 0 ? (
           <View style={styles.empty}>
             <View style={styles.emptyIconCircle}>
-              <Ionicons name="heart-outline" size={40} color={colors.pink} />
+              <Ionicons name="people-outline" size={40} color="#4ADE80" />
             </View>
-            <Text style={styles.emptyTitle}>Aún no tienes matches</Text>
+            <Text style={styles.emptyTitle}>Aún no tienes conexiones</Text>
             <Text style={styles.emptyText}>
-              Cuando alguien a quien le diste like también te dé like, aparecerá aquí.
-              ¡Sigue descubriendo!
+              Cuando alguien en quien hayas mostrado interés te corresponda, aparecerá aquí como conexión.
             </Text>
             <TouchableOpacity
               style={styles.discoverBtn}
               onPress={() => navigation.getParent()?.navigate('Discover')}
               activeOpacity={0.8}
             >
-              <Ionicons name="sparkles" size={18} color={colors.background} />
-              <Text style={styles.discoverBtnText}>Descubrir perfiles</Text>
+              <Ionicons name="search" size={18} color={colors.background} />
+              <Text style={styles.discoverBtnText}>Explorar perfiles</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -236,14 +268,35 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: colors.pinkLight,
+    backgroundColor: 'rgba(59,130,246,0.12)',
     borderWidth: 1,
-    borderColor: 'rgba(233,30,99,0.3)',
+    borderColor: 'rgba(59,130,246,0.4)',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 999,
   },
-  likesReceivedText: { color: colors.pink, fontWeight: '700', fontSize: 13 },
+  likesReceivedBtnActive: {
+    backgroundColor: '#3B82F6',
+    borderColor: '#3B82F6',
+    shadowColor: '#3B82F6',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  likesReceivedText: { color: '#3B82F6', fontWeight: '700', fontSize: 13 },
+  likesReceivedTextActive: { color: colors.white },
+  likesBadge: {
+    backgroundColor: colors.white,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: 2,
+  },
+  likesBadgeText: { color: '#3B82F6', fontSize: 11, fontWeight: '900' },
   headerTitle: { fontSize: 22, fontWeight: '800', color: colors.text },
   headerSubtitle: { fontSize: 13, color: colors.textMuted, marginTop: 2 },
   scroll: { flex: 1 },
@@ -259,7 +312,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: colors.pinkLight,
+    backgroundColor: 'rgba(74,222,128,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.sm,
@@ -270,7 +323,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    backgroundColor: colors.pink,
+    backgroundColor: '#4ADE80',
     borderRadius: 14,
     paddingVertical: 14,
     paddingHorizontal: 24,
@@ -304,7 +357,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
   },
-  noMessage: { fontSize: 13, color: colors.pink, fontWeight: '600' },
+  noMessage: { fontSize: 13, color: '#4ADE80', fontWeight: '600' },
   unreadBadge: {
     position: 'absolute',
     top: -2,
@@ -320,4 +373,13 @@ const styles = StyleSheet.create({
     borderColor: colors.surface,
   },
   unreadText: { fontSize: 11, fontWeight: '800', color: colors.white },
+  expiryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 4,
+  },
+  expiryRowUrgent: {},
+  expiryText: { fontSize: 11, color: colors.textMuted, fontWeight: '600' },
+  expiryTextUrgent: { color: '#fca5a5' },
 });

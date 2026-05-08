@@ -40,7 +40,7 @@ export const DataExportScreen = ({ navigation }: Props) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12}>
+        <TouchableOpacity onPress={() => navigation.goBack()} hitSlop={12} accessibilityRole="button" accessibilityLabel="Volver">
           <Ionicons name="arrow-back" size={22} color={colors.text} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Descargar mis datos</Text>
@@ -52,7 +52,7 @@ export const DataExportScreen = ({ navigation }: Props) => {
           <Ionicons name="information-circle" size={22} color={colors.info} />
           <Text style={styles.infoText}>
             Genera una copia en formato JSON de toda la información que CoFound tiene sobre ti
-            (perfil, fotos, skills, likes, matches y mensajes enviados). Cumple con el RGPD.
+            (perfil, fotos, habilidades, conexiones y mensajes enviados). Cumple con el RGPD.
           </Text>
         </View>
 

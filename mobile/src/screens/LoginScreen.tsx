@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Animated, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
 const logo = require('../../assets/logocofound.png');
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { AuthStackParamList } from '../types/navigation';
+import { useEntrance } from '../utils/useEntrance';
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
@@ -26,6 +27,9 @@ export const LoginScreen = ({ navigation }: Props) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const headerAnim = useEntrance(0);
+  const formAnim = useEntrance(1);
+  const switchAnim = useEntrance(2);
 
   const handleLogin = async () => {
     const validation: Errors = {};
@@ -66,13 +70,13 @@ export const LoginScreen = ({ navigation }: Props) => {
       </TouchableOpacity>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <View style={styles.header}>
+        <Animated.View style={[styles.header, headerAnim]}>
           <Image source={logo} style={styles.logo} resizeMode="contain" />
           <Text style={styles.title}>Bienvenido de nuevo</Text>
           <Text style={styles.subtitle}>Inicia sesión para continuar</Text>
-        </View>
+        </Animated.View>
 
-        <View style={styles.form}>
+        <Animated.View style={[styles.form, formAnim]}>
           <InputField
             label="Correo electrónico"
             autoCapitalize="none"
@@ -102,14 +106,16 @@ export const LoginScreen = ({ navigation }: Props) => {
             <Text style={styles.forgotText}>¿Olvidaste tu contraseña?</Text>
           </TouchableOpacity>
           <PrimaryButton label="Iniciar sesión" onPress={handleLogin} loading={loading} />
-        </View>
+        </Animated.View>
 
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-          <Text style={styles.switchText}>
-            ¿No tienes cuenta?{' '}
-            <Text style={styles.switchLink}>Regístrate aquí</Text>
-          </Text>
-        </TouchableOpacity>
+        <Animated.View style={switchAnim}>
+          <TouchableOpacity onPress={() => navigation.navigate('Register')}>
+            <Text style={styles.switchText}>
+              ¿No tienes cuenta?{' '}
+              <Text style={styles.switchLink}>Regístrate aquí</Text>
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );

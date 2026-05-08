@@ -1,6 +1,9 @@
 import { pool } from '../config/database';
+import { env } from '../config/env';
 import { AppError } from '../utils/http-error';
 import { generateAutoReply } from './ai.service';
+
+const aiAutoReplyEnabled = env.AI_AUTO_REPLY === 'true';
 
 export const getMessages = async (currentUserId: string, matchId: string) => {
   const matchCheck = await pool.query(
@@ -60,7 +63,12 @@ export const sendMessage = async (currentUserId: string, matchId: string, conten
     createdAt: result.rows[0].created_at,
   };
 
-  // Generate AI reply with 8s timeout
+  // Auto-reply (academic demo mode). Disabled in real production via
+  // AI_AUTO_REPLY=false so messages stay strictly human-to-human.
+  if (!aiAutoReplyEnabled) {
+    return { userMessage, autoReply: null };
+  }
+
   const timeoutPromise = new Promise<string>((_, reject) =>
     setTimeout(() => reject(new Error('AI timeout')), 8000),
   );
