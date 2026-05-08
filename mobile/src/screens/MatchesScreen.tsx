@@ -143,7 +143,7 @@ export const MatchesScreen = () => {
   const filteredMatches = matches.filter((m) => {
     if (!searchQuery.trim()) return true;
     const q = searchQuery.trim().toLowerCase();
-    return `${m.firstName} ${m.lastName}`.toLowerCase().includes(q);
+    return `${m.user.firstName} ${m.user.lastName}`.toLowerCase().includes(q);
   });
 
   const loadMatches = useCallback(async () => {

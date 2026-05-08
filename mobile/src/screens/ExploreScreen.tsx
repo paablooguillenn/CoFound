@@ -145,6 +145,9 @@ export const ExploreScreen = () => {
   const [compatModalProfile, setCompatModalProfile] = useState<DiscoveryUser | null>(null);
   const handleBadgePress = useCallback((p: DiscoveryUser) => setCompatModalProfile(p), []);
 
+  // Forward ref to loadProfiles so handlers declared above it can call it.
+  const loadProfilesRef = useRef<() => Promise<void>>(async () => {});
+
   const handleProfileMore = useCallback((p: DiscoveryUser) => {
     Alert.alert(
       `${p.firstName} ${p.lastName}`,
@@ -171,7 +174,7 @@ export const ExploreScreen = () => {
               const { blockUser } = await import('../services/api');
               await blockUser(p.id, 'Bloqueado desde Discovery');
               Alert.alert('Usuario bloqueado', 'No volverás a ver su perfil.');
-              loadProfiles();
+              loadProfilesRef.current();
             } catch {
               /* noop */
             }
@@ -180,7 +183,7 @@ export const ExploreScreen = () => {
         { text: 'Cancelar', style: 'cancel' },
       ],
     );
-  }, [loadProfiles]);
+  }, []);
 
   // Location filter (premium only)
   const [locations, setLocations] = useState<string[]>([]);
@@ -228,6 +231,11 @@ export const ExploreScreen = () => {
       setLoading(false);
     }
   }, [selectedLocation, selectedLevel, selectedGoal, position]);
+
+  // Keep the forward-declared ref pointed at the latest loadProfiles closure.
+  useEffect(() => {
+    loadProfilesRef.current = loadProfiles;
+  }, [loadProfiles]);
 
   // Load locations for filter
   useEffect(() => {

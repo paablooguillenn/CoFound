@@ -5,16 +5,22 @@ import { generateAutoReply } from './ai.service';
 
 const aiAutoReplyEnabled = env.AI_AUTO_REPLY === 'true';
 
-export const getMessages = async (currentUserId: string, matchId: string) => {
+export const ALLOWED_REACTIONS = ['👍', '🤝', '🔥', '💡', '❤️'] as const;
+export type Reaction = (typeof ALLOWED_REACTIONS)[number];
+
+const ensureMatchAccess = async (currentUserId: string, matchId: string) => {
   const matchCheck = await pool.query(
     `SELECT id FROM matches
      WHERE id = $1 AND (user_a_id = $2 OR user_b_id = $2)`,
     [matchId, currentUserId],
   );
-
   if (!matchCheck.rowCount) {
     throw new AppError('Match not found', 404);
   }
+};
+
+export const getMessages = async (currentUserId: string, matchId: string) => {
+  await ensureMatchAccess(currentUserId, matchId);
 
   const result = await pool.query(
     `SELECT id, sender_id, content, read_at, created_at
@@ -24,13 +30,70 @@ export const getMessages = async (currentUserId: string, matchId: string) => {
     [matchId],
   );
 
+  if (!result.rowCount) {
+    return [];
+  }
+
+  const ids = result.rows.map((r) => r.id);
+  const reactionsRes = await pool.query<{ message_id: string; user_id: string; emoji: string }>(
+    `SELECT message_id, user_id, emoji
+     FROM message_reactions
+     WHERE message_id = ANY($1::uuid[])`,
+    [ids],
+  );
+
+  const byMessage = new Map<string, { userId: string; emoji: string }[]>();
+  for (const row of reactionsRes.rows) {
+    const list = byMessage.get(row.message_id) ?? [];
+    list.push({ userId: row.user_id, emoji: row.emoji });
+    byMessage.set(row.message_id, list);
+  }
+
   return result.rows.map((row) => ({
     id: row.id,
     senderId: row.sender_id,
     content: row.content,
     readAt: row.read_at,
     createdAt: row.created_at,
+    reactions: byMessage.get(row.id) ?? [],
   }));
+};
+
+const isAllowedReaction = (value: string): value is Reaction =>
+  (ALLOWED_REACTIONS as readonly string[]).includes(value);
+
+export const setReaction = async (currentUserId: string, matchId: string, messageId: string, emoji: string) => {
+  if (!isAllowedReaction(emoji)) {
+    throw new AppError('Reacción no válida', 400);
+  }
+  await ensureMatchAccess(currentUserId, matchId);
+
+  const msg = await pool.query<{ match_id: string }>(
+    'SELECT match_id FROM messages WHERE id = $1',
+    [messageId],
+  );
+  if (!msg.rowCount || msg.rows[0].match_id !== matchId) {
+    throw new AppError('Mensaje no encontrado', 404);
+  }
+
+  await pool.query(
+    `INSERT INTO message_reactions (message_id, user_id, emoji)
+     VALUES ($1, $2, $3)
+     ON CONFLICT (message_id, user_id)
+     DO UPDATE SET emoji = EXCLUDED.emoji, created_at = NOW()`,
+    [messageId, currentUserId, emoji],
+  );
+
+  return { success: true, emoji };
+};
+
+export const clearReaction = async (currentUserId: string, matchId: string, messageId: string) => {
+  await ensureMatchAccess(currentUserId, matchId);
+  await pool.query(
+    'DELETE FROM message_reactions WHERE message_id = $1 AND user_id = $2',
+    [messageId, currentUserId],
+  );
+  return { success: true };
 };
 
 /**

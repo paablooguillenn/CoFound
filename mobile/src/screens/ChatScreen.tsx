@@ -28,12 +28,17 @@ import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
 import { AppStackParamList } from '../types/navigation';
 import { useAuth } from '../context/AuthContext';
-import { deleteMessage, getMessages, sendMessage, getMatchProfile, unmatchUser, blockUser, reportUser, markMessagesRead } from '../services/api';
+import { clearMessageReaction, deleteMessage, getMessages, REACTIONS, ReactionEmoji, sendMessage, getMatchProfile, setMessageReaction, unmatchUser, blockUser, reportUser, markMessagesRead } from '../services/api';
 import { formatPresence } from '../utils/presence';
 
 type Props = NativeStackScreenProps<AppStackParamList, 'Chat'>;
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+interface MessageReaction {
+  userId: string;
+  emoji: string;
+}
 
 interface Message {
   id: string;
@@ -41,6 +46,7 @@ interface Message {
   readAt?: string | null;
   content: string;
   createdAt: string;
+  reactions?: MessageReaction[];
 }
 
 interface MatchProfile {
@@ -129,13 +135,17 @@ const TypingIndicator = ({ name }: { name: string }) => {
 const AnimatedMessage = ({
   item,
   isMe,
+  currentUserId,
   formatTime,
   onLongPress,
+  onReactionTap,
 }: {
   item: Message;
   isMe: boolean;
+  currentUserId: string | undefined;
   formatTime: (d: string) => string;
   onLongPress?: (m: Message) => void;
+  onReactionTap?: (m: Message, emoji: string) => void;
 }) => {
   const slideIn = useRef(new Animated.Value(isMe ? 30 : -30)).current;
   const fadeIn = useRef(new Animated.Value(0)).current;
@@ -156,6 +166,18 @@ const AnimatedMessage = ({
     ]).start();
   }, [slideIn, fadeIn]);
 
+  // Group reactions by emoji to render compact chips ("👍 2")
+  const grouped = (() => {
+    const map = new Map<string, { count: number; mine: boolean }>();
+    for (const r of item.reactions ?? []) {
+      const entry = map.get(r.emoji) ?? { count: 0, mine: false };
+      entry.count += 1;
+      if (r.userId === currentUserId) entry.mine = true;
+      map.set(r.emoji, entry);
+    }
+    return Array.from(map.entries());
+  })();
+
   return (
     <Animated.View
       style={[
@@ -169,11 +191,11 @@ const AnimatedMessage = ({
     >
       <TouchableOpacity
         style={[styles.bubble, isMe ? styles.bubbleMe : styles.bubbleThem]}
-        onLongPress={() => isMe && onLongPress?.(item)}
-        delayLongPress={400}
-        activeOpacity={isMe ? 0.7 : 1}
-        accessibilityRole={isMe ? 'button' : undefined}
-        accessibilityLabel={isMe ? 'Mantén pulsado para opciones' : undefined}
+        onLongPress={() => onLongPress?.(item)}
+        delayLongPress={350}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Mantén pulsado para reaccionar"
       >
         <Text style={[styles.bubbleText, isMe ? styles.bubbleTextMe : styles.bubbleTextThem]}>
           {item.content}
@@ -192,6 +214,21 @@ const AnimatedMessage = ({
           )}
         </View>
       </TouchableOpacity>
+      {grouped.length > 0 && (
+        <View style={[styles.reactionsRow, isMe ? styles.reactionsRowMe : styles.reactionsRowThem]}>
+          {grouped.map(([emoji, info]) => (
+            <TouchableOpacity
+              key={emoji}
+              style={[styles.reactionChip, info.mine && styles.reactionChipMine]}
+              onPress={() => onReactionTap?.(item, emoji)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.reactionEmoji}>{emoji}</Text>
+              {info.count > 1 && <Text style={styles.reactionCount}>{info.count}</Text>}
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </Animated.View>
   );
 };
@@ -211,6 +248,7 @@ export const ChatScreen = ({ navigation, route }: Props) => {
   const [showProfile, setShowProfile] = useState(false);
   const [profile, setProfile] = useState<MatchProfile | null>(null);
   const [photoViewer, setPhotoViewer] = useState<{ visible: boolean; index: number }>({ visible: false, index: 0 });
+  const [reactionTarget, setReactionTarget] = useState<Message | null>(null);
   const listRef = useRef<FlatList>(null);
 
   const nameParts = matchName.split(' ');
@@ -358,36 +396,73 @@ export const ChatScreen = ({ navigation, route }: Props) => {
   };
 
   const handleMessageLongPress = (msg: Message) => {
-    const ageMs = Date.now() - new Date(msg.createdAt).getTime();
-    const tooOld = ageMs > 5 * 60 * 1000;
-    Alert.alert(
-      'Mensaje',
-      tooOld
-        ? 'Solo puedes borrar mensajes durante los primeros 5 minutos tras enviarlos.'
-        : '¿Eliminar este mensaje?',
-      tooOld
-        ? [{ text: 'Cerrar', style: 'cancel' }]
-        : [
-            { text: 'Cancelar', style: 'cancel' },
-            {
-              text: 'Eliminar',
-              style: 'destructive',
-              onPress: async () => {
-                try {
-                  await deleteMessage(matchId, msg.id);
-                  setMessages((prev) => prev.filter((m) => m.id !== msg.id));
-                } catch (err: any) {
-                  Alert.alert('Error', err?.response?.data?.message ?? 'No se pudo eliminar el mensaje.');
-                }
-              },
-            },
-          ],
+    setReactionTarget(msg);
+  };
+
+  const applyReaction = (msg: Message, emoji: ReactionEmoji) => {
+    const userId = user?.id;
+    if (!userId) return;
+    const existingMine = msg.reactions?.find((r) => r.userId === userId);
+    const isToggleOff = existingMine?.emoji === emoji;
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== msg.id) return m;
+        const without = (m.reactions ?? []).filter((r) => r.userId !== userId);
+        return {
+          ...m,
+          reactions: isToggleOff ? without : [...without, { userId, emoji }],
+        };
+      }),
     );
+    if (isToggleOff) {
+      clearMessageReaction(matchId, msg.id).catch(() => {});
+    } else {
+      setMessageReaction(matchId, msg.id, emoji).catch(() => {});
+    }
+  };
+
+  const handleReactionTap = (msg: Message, emoji: string) => {
+    const userId = user?.id;
+    if (!userId) return;
+    const existingMine = msg.reactions?.find((r) => r.userId === userId);
+    if (existingMine?.emoji === emoji) {
+      // Tap own reaction → clear it (optimistic)
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.id === msg.id
+            ? { ...m, reactions: (m.reactions ?? []).filter((r) => r.userId !== userId) }
+            : m,
+        ),
+      );
+      clearMessageReaction(matchId, msg.id).catch(() => {});
+    } else {
+      // Tapping someone else's reaction or a different emoji opens the picker.
+      setReactionTarget(msg);
+    }
+  };
+
+  const handleDeleteFromPicker = async (msg: Message) => {
+    setReactionTarget(null);
+    try {
+      await deleteMessage(matchId, msg.id);
+      setMessages((prev) => prev.filter((m) => m.id !== msg.id));
+    } catch (err: any) {
+      Alert.alert('Error', err?.response?.data?.message ?? 'No se pudo eliminar el mensaje.');
+    }
   };
 
   const renderMessage = ({ item }: { item: Message }) => {
     const isMe = item.senderId === user?.id;
-    return <AnimatedMessage item={item} isMe={isMe} formatTime={formatTime} onLongPress={handleMessageLongPress} />;
+    return (
+      <AnimatedMessage
+        item={item}
+        isMe={isMe}
+        currentUserId={user?.id}
+        formatTime={formatTime}
+        onLongPress={handleMessageLongPress}
+        onReactionTap={handleReactionTap}
+      />
+    );
   };
 
   const headerContent = (
@@ -586,6 +661,58 @@ export const ChatScreen = ({ navigation, route }: Props) => {
               <Text style={styles.reasonCancelText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Reaction picker / message actions */}
+      <Modal
+        visible={reactionTarget !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setReactionTarget(null)}
+      >
+        <TouchableOpacity
+          style={styles.reactionOverlay}
+          activeOpacity={1}
+          onPress={() => setReactionTarget(null)}
+        >
+          {reactionTarget && (() => {
+            const target = reactionTarget;
+            const isMine = target.senderId === user?.id;
+            const ageMs = Date.now() - new Date(target.createdAt).getTime();
+            const canDelete = isMine && ageMs <= 5 * 60 * 1000;
+            return (
+              <View style={styles.reactionPicker}>
+                <View style={styles.reactionPickerRow}>
+                  {REACTIONS.map((emoji) => (
+                    <TouchableOpacity
+                      key={emoji}
+                      style={styles.reactionPickerItem}
+                      onPress={() => {
+                        setReactionTarget(null);
+                        applyReaction(target, emoji);
+                      }}
+                      activeOpacity={0.6}
+                    >
+                      <Text style={styles.reactionPickerEmoji}>{emoji}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+                {canDelete && (
+                  <>
+                    <View style={styles.menuDivider} />
+                    <TouchableOpacity
+                      style={styles.reactionPickerDelete}
+                      onPress={() => handleDeleteFromPicker(target)}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                      <Text style={[styles.menuText, { color: colors.danger }]}>Eliminar mensaje</Text>
+                    </TouchableOpacity>
+                  </>
+                )}
+              </View>
+            );
+          })()}
         </TouchableOpacity>
       </Modal>
 
@@ -837,6 +964,63 @@ const styles = StyleSheet.create({
   timestamp: { fontSize: 11 },
   timestampMe: { color: 'rgba(255,255,255,0.6)' },
   timestampThem: { color: colors.textMuted },
+
+  // Reactions
+  reactionsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: -6, marginBottom: 4 },
+  reactionsRowMe: { justifyContent: 'flex-end', paddingRight: 8 },
+  reactionsRowThem: { justifyContent: 'flex-start', paddingLeft: 8 },
+  reactionChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: 12,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    gap: 3,
+  },
+  reactionChipMine: { borderColor: colors.primary, backgroundColor: colors.surfaceLight },
+  reactionEmoji: { fontSize: 13 },
+  reactionCount: { fontSize: 11, color: colors.textSecondary, fontWeight: '600' },
+
+  // Reaction picker modal
+  reactionOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  reactionPicker: {
+    backgroundColor: colors.surface,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    overflow: 'hidden',
+    minWidth: 280,
+  },
+  reactionPickerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  reactionPickerItem: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 22,
+  },
+  reactionPickerEmoji: { fontSize: 26 },
+  reactionPickerDelete: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: 14,
+  },
 
   // Input
   inputBar: { flexDirection: 'row', alignItems: 'flex-end', backgroundColor: colors.surface, borderTopWidth: 1, borderTopColor: colors.border, padding: spacing.sm, gap: spacing.sm },

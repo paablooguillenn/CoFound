@@ -1,5 +1,5 @@
 import React from 'react';
-import { RefreshControl, SafeAreaView, ScrollView, StyleSheet, ViewStyle } from 'react-native';
+import { RefreshControlProps, SafeAreaView, ScrollView, StyleSheet, ViewStyle } from 'react-native';
 
 import { colors } from '../theme/colors';
 import { spacing } from '../theme/spacing';
@@ -13,7 +13,7 @@ export const ScreenContainer = ({
   children: React.ReactNode;
   scroll?: boolean;
   contentStyle?: ViewStyle;
-  refreshControl?: React.ReactElement<typeof RefreshControl>;
+  refreshControl?: React.ReactElement<RefreshControlProps>;
 }) => {
   if (!scroll) {
     return <SafeAreaView style={[styles.safeArea, contentStyle]}>{children}</SafeAreaView>;

@@ -106,7 +106,7 @@ export const InAppNotificationProvider = ({
       matchAvatar: active.sender.avatarUrl,
     };
     setActive(null);
-    navigationRef.navigate('Chat' as never, target as never);
+    (navigationRef as any).navigate('Chat', target);
   };
 
   return (

@@ -182,3 +182,14 @@ CREATE INDEX IF NOT EXISTS idx_user_likes_super ON user_likes(receiver_id, is_su
 CREATE INDEX IF NOT EXISTS idx_user_passes_sender_date ON user_passes(sender_id, created_at);
 CREATE INDEX IF NOT EXISTS idx_matches_users ON matches(user_a_id, user_b_id);
 CREATE INDEX IF NOT EXISTS idx_messages_match ON messages(match_id, created_at);
+
+-- M3: Message reactions. One reaction per (message, user) — adding a second
+-- replaces the first via UPSERT in the service layer.
+CREATE TABLE IF NOT EXISTS message_reactions (
+  message_id UUID NOT NULL REFERENCES messages(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  emoji VARCHAR(8) NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (message_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_msg_reactions_message ON message_reactions(message_id);

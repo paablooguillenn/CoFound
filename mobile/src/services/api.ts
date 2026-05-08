@@ -80,6 +80,17 @@ export const sendMessage = (matchId: string, content: string) =>
 export const deleteMessage = (matchId: string, messageId: string) =>
   api.delete(`/matches/${matchId}/messages/${messageId}`).then((r) => r.data);
 
+export const REACTIONS = ['👍', '🤝', '🔥', '💡', '❤️'] as const;
+export type ReactionEmoji = (typeof REACTIONS)[number];
+
+export const setMessageReaction = (matchId: string, messageId: string, emoji: ReactionEmoji) =>
+  api
+    .post(`/matches/${matchId}/messages/${messageId}/reactions`, { emoji })
+    .then((r) => r.data);
+
+export const clearMessageReaction = (matchId: string, messageId: string) =>
+  api.delete(`/matches/${matchId}/messages/${messageId}/reactions`).then((r) => r.data);
+
 // --- Match actions ---
 export const getMatchProfile = (matchId: string) =>
   api.get(`/matches/${matchId}/profile`).then((r) => r.data);
