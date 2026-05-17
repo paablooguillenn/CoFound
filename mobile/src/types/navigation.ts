@@ -9,6 +9,7 @@ export type AuthStackParamList = {
 export type AppTabParamList = {
   Discover: undefined;
   Matches: undefined;
+  EventsTab: undefined;
   Profile: undefined;
 };
 

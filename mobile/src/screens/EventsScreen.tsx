@@ -73,9 +73,6 @@ export const EventsScreen = () => {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-          <Ionicons name="arrow-back" size={22} color={colors.text} />
-        </TouchableOpacity>
         <Text style={styles.headerTitle}>Eventos</Text>
         <TouchableOpacity
           onPress={() => navigation.navigate('CreateEvent')}

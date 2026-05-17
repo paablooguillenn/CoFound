@@ -3,6 +3,7 @@ import { AppState } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
+import { EventsScreen } from '../screens/EventsScreen';
 import { ExploreScreen } from '../screens/ExploreScreen';
 import { MatchesScreen } from '../screens/MatchesScreen';
 import { ProfileScreen } from '../screens/ProfileScreen';
@@ -83,6 +84,14 @@ export const AppTabsNavigator = () => {
             fontSize: 10,
             fontWeight: '800',
           },
+        }}
+      />
+      <Tab.Screen
+        name="EventsTab"
+        component={EventsScreen}
+        options={{
+          title: 'Eventos',
+          tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
         }}
       />
       <Tab.Screen
