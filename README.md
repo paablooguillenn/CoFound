@@ -11,7 +11,7 @@ Aplicación móvil de matching profesional para que la gente emprendedora encuen
 [![Node.js](https://img.shields.io/badge/Node.js-20-339933?logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License](https://img.shields.io/badge/License-All_rights_reserved-red.svg)](#licencia)
 
 **[🌐 Web pública](https://cofound.space)** · **[💼 LinkedIn](https://www.linkedin.com/in/paablooguillenn)**
 
@@ -240,4 +240,8 @@ Toda la arquitectura, código, base de datos, landing y despliegue han sido dise
 
 ## Licencia
 
-Distribuido bajo licencia [MIT](LICENSE). Libre uso, modificación y distribución — agradezco cita si reutilizas partes sustanciales.
+**© 2026 Pablo Guillén Lucena · Todos los derechos reservados.**
+
+El código está visible en GitHub con fines de portfolio y revisión técnica. **No se autoriza** su copia, reutilización, modificación, redistribución ni explotación comercial sin permiso expreso del autor.
+
+¿Tienes interés en colaborar o licenciar parte del proyecto? Contacta vía [LinkedIn](https://www.linkedin.com/in/paablooguillenn).
