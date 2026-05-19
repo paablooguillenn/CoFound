@@ -57,10 +57,19 @@ export const CreateEventScreen = () => {
 
   const dayOptions = buildDayOptions();
 
-  const canSubmit = title.trim().length >= 3 && day && hour;
-
   const handleSubmit = async () => {
-    if (!canSubmit || saving) return;
+    if (saving) return;
+
+    // Validación con feedback visible — antes el botón fallaba en silencio
+    const missing: string[] = [];
+    if (title.trim().length < 3) missing.push('Título (mínimo 3 caracteres)');
+    if (!day) missing.push('Día');
+    if (!hour) missing.push('Hora');
+    if (missing.length > 0) {
+      Alert.alert('Faltan datos', `Completa los campos: ${missing.join(', ')}.`);
+      return;
+    }
+
     const startsAt = `${day}T${hour}:00`;
     const startsDate = new Date(startsAt);
     if (Number.isNaN(startsDate.getTime()) || startsDate.getTime() <= Date.now()) {

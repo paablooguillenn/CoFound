@@ -49,3 +49,25 @@ assets/embedded_cover_logo*.png
 assets/corner_logo_area.png
 assets/anexo_check_*.png
 assets/toc_check.png
+assets/_pptx_logo_*.png
+
+# Microsoft Office temp lock files
+~$*
+
+# TFC defense and academic artefacts — not part of the product
+*.pptx
+GUION_DEFENSA.md
+build_pptx.py
+generate_pdf.py
+check_pdf.py
+crop_decorative.py
+extract_logos.py
+TFC_CoFound_PabloGuillen.*
+CoFound_Especificacion_*.pdf
+CoFound_TFC_Defensa*.pptx
+2EVA_Actv*.pdf
+Justificación_TFC_*.pdf
+Modelo TFC*.pdf
+Rúbrica*.pdf
+Rúbricas*.pdf
+CoFound Landing - Standalone.html

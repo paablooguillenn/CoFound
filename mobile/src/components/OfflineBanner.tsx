@@ -7,19 +7,28 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '../theme/colors';
 
 /**
- * Top-of-screen banner that appears whenever the device loses connectivity
- * (or only has a captive portal). Listens to NetInfo events; auto-hides on
- * reconnect.
+ * Top-of-screen banner that aparece cuando el dispositivo pierde conexión.
+ *
+ * DESACTIVADO temporalmente: NetInfo en Expo Go iOS daba falsos positivos
+ * (banner aparece aunque la conexión real funcione). Devolvemos null hasta
+ * que tengamos detección fiable basada en fallos reales de API.
  */
 export const OfflineBanner = () => {
+  return null;
+
+  // eslint-disable-next-line no-unreachable
+  // ── implementación previa, deshabilitada ────────────────────────────
   const insets = useSafeAreaInsets();
   const [offline, setOffline] = useState(false);
   const translate = useRef(new Animated.Value(-60)).current;
 
   useEffect(() => {
+    // Solo confiamos en `isConnected`. `isInternetReachable` da falsos
+    // negativos en Expo Go iOS porque su ping de comprobación
+    // (captive.apple.com) es flaky y dispara el banner aunque la conexión
+    // real funcione perfectamente.
     const unsub = NetInfo.addEventListener((state) => {
-      const isOffline = state.isConnected === false || state.isInternetReachable === false;
-      setOffline(isOffline);
+      setOffline(state.isConnected === false);
     });
     return () => unsub();
   }, []);
