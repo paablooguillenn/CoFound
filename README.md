@@ -35,10 +35,14 @@ CoFound es una app móvil donde la gente que quiere emprender se encuentra **ant
 
 <table>
 <tr>
-<td align="center"><img src="assets/screenshots/13_discover_card.png" width="220"><br><sub>Discovery con score de compatibilidad</sub></td>
-<td align="center"><img src="assets/screenshots/16_match_modal.png" width="220"><br><sub>Match con sinergia detectada</sub></td>
-<td align="center"><img src="assets/screenshots/20_chat_con_ia.png" width="220"><br><sub>Chat con IA y reacciones</sub></td>
-<td align="center"><img src="assets/screenshots/21_profile_view.png" width="220"><br><sub>Perfil completo</sub></td>
+<td align="center"><img src="mobile/assets/01_welcome.png" width="220"><br><sub>Welcome — primera impresión</sub></td>
+<td align="center"><img src="mobile/assets/13_discover_card.png" width="220"><br><sub>Discovery — score de compatibilidad</sub></td>
+<td align="center"><img src="mobile/assets/16_match_modal.png" width="220"><br><sub>Match — sinergia detectada</sub></td>
+</tr>
+<tr>
+<td align="center"><img src="mobile/assets/20_chat_con_ia.png" width="220"><br><sub>Chat con IA + reacciones</sub></td>
+<td align="center"><img src="mobile/assets/30_events.png" width="220"><br><sub>Eventos · meetups con RSVP</sub></td>
+<td align="center"><img src="mobile/assets/21_profile_view.png" width="220"><br><sub>Perfil completo</sub></td>
 </tr>
 </table>
 
